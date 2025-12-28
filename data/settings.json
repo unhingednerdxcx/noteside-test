@@ -1,38 +1,35 @@
 {
     "appear": {
-        "Theme": "light",
+        "Theme": "dark",
         "Editortheme": "vs-dark",
-        "Fontfamily": "'Source Code Pro', monospace",
-        "Fontsize": "16",
-        "Sidebar": "220",
+        "Fontfamily": "'Monaco', monospace",
+        "Fontsize": "14",
+        "Sidebar": "211",
         "Minimap": true,
         "Linenumber": true
     },
     "editor": {
-        "Tabsize": "4",
-        "Space": false,
-        "Wordwrap": false,
+        "Tabsize": "5",
+        "Space": true,
+        "Wordwrap": true,
         "Fillbracket": true,
-        "Formatsave": false,
-        "Trim": false,
+        "Formatsave": true,
+        "Trim": true,
         "Cursorstyle": "line",
-        "Cursorblink": false
+        "Cursorblink": true
     },
     "terminal": {
         "Shell": "auto",
         "Fontsize": "14",
         "Theme": "dark",
-        "Cursorblink": false,
-        "Copyonselect": false,
-        "Rightclick": false,
-        "theme": "default"
+        "Rightclick": true
     },
     "app": {
         "Autotime": "3",
         "Restore": false,
         "Confirm": false,
         "Update": false,
-        "Tele": "on"
+        "log": "on"
     },
     "key": {}
 }

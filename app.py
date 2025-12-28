@@ -23,6 +23,10 @@ import fcntl
 import termios
 import struct
 import pexpect
+import ptyprocess
+import serial
+import time
+import getpass
 # test
 ## === GLOABAL VARS === ##
 
@@ -37,6 +41,11 @@ root.withdraw()
 status = False
 available = False
 i = 0
+si = 0
+si_lock = threading.Lock()
+
+
+
 #test
 
 ## === FUNCTIONS === ##
@@ -270,52 +279,36 @@ def open_native_file_ports_dialog(multiple=False):
         root.destroy()
         return result if result else None
 
-def image_to_base64(img: Image.Image) -> str:
-    buffered = BytesIO()
-    img_format = img.format if img.format else "PNG"  # Default to PNG
-    img.save(buffered, format=img_format)
-    img_bytes = buffered.getvalue()
-    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    return f"data:image/{img_format.lower()};base64,{img_b64}"
 
-def run_command(cmd):
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-
-        for line in proc.stdout:
-            eel.term_output(line)()
-        for line in proc.stderr:
-            eel.term_output(line)()
-    except Exception as e:
-        eel.term_output(f"Error: {e}\n")()
 
 ## === EXPOSED FUNCTIONS === ##
 
 @eel.expose
-def log(file, info, other):
+def log(file, info, other, err=False):
+    if jsonmanager('g', 'app', 'log') == "off":
+        return
+    elif jsonmanager('g', 'app', 'log') == "error":
+        if not(err):
+            return
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     global i
     i = i + 1
-    msg = f" ${i} ${info}  ${other}"
+    msg = f" ${i} ${file} ${info}  ${other} ${err}"
     log_file_path = os.path.join(FOLDER, "notes.txt")
     with open(log_file_path, 'a', encoding='utf-8') as f:
         f.write(msg + "\n")
 
 @eel.expose
 def openFolder():
-    try:
-        file_path = open_native_folder_dialog()
-        log("py", f"successfully gave {file_path}", "")
-        return {"success": True, "path": file_path}
-    except Exception as e:
-        trace = traceback.format_exc()
-        log("py", e, trace)
-        return {"success": False, "e": str(e)}
+    file_path = open_native_folder_dialog()
+    with open('data/info.json', 'r') as f:
+        data = json.load(f)
+    data['LastWorkspace'] = file_path
+    log('py', '', data)
+    with open('data/info.json', 'w') as f:
+        json.dump(data, f, indent=4)
+    log("py", f"successfully gave {file_path}", "")
+    return {"success": True, "path": file_path}
 
 @eel.expose
 def openFile():
@@ -325,8 +318,8 @@ def openFile():
         return {"success": True, "path": file_path}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
-        return {"success": False, "message": e}
+        log("py", e, trace, True)
+        return {"success": False, "message": str(e)}
 
 @eel.expose
 def saveFile(content, file_path):
@@ -336,8 +329,10 @@ def saveFile(content, file_path):
         return {"success": True}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "message": str(e)}
+
+
 
 @eel.expose
 def listFiles(directory):
@@ -353,7 +348,7 @@ def listFiles(directory):
         return {"success": True, "files": objects} 
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "error": str(e)}
 
 @eel.expose
@@ -364,7 +359,7 @@ def loadFile(file_path):
         return {"success": True, "content": content}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "message": str(e)}
 
 @eel.expose
@@ -377,7 +372,7 @@ def makeFile(path, fileName):
         return {"success": True}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "message": str(e)}
 
 @eel.expose
@@ -388,7 +383,7 @@ def makeNewFolder(path):
         return {"success": True}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "message": str(e)}
 
 @eel.expose
@@ -432,7 +427,7 @@ def readFile(path, name):
         return {"success": True, "content": content, "language": language}
     except Exception as e:
         trace = traceback.format_exc()
-        log('py', e, trace)
+        log('py', e, trace, True)
         return {"success": False, "error": str(e)}
 
 @eel.expose
@@ -467,7 +462,7 @@ def renameFile(newName, oldPath, oldName=''):
         log('py', '', newPath)
         return {"success": True, "newPath": newPath}
     except Exception as e:
-        return {"success": False, "message": e}
+        return {"success": False, "message": str(e)}
 
 @eel.expose
 def deleteFile(path):
@@ -479,8 +474,8 @@ def deleteFile(path):
         return {"success": True}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
-        return {"success": False, "message": e}
+        log("py", e, trace, True)
+        return {"success": False, "message": str(e)}
 
 ## == Notes == ##
 
@@ -515,7 +510,7 @@ def listNotes():
             notes.append({"name": note, "path": path})
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "error": str(e)}
     return {"success": True, "Notes": notes}
 
@@ -528,7 +523,7 @@ def saveNote(name, content):
         return {"success": True}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "w": str(e)}
 
 ## == Dict == ##
@@ -542,7 +537,7 @@ def listDict():
             dictionary.append({"name": dic, "path": path})
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "error": str(e)}
     return {"success": True, "Dict": dictionary}
 
@@ -555,7 +550,7 @@ def saveDict(name, content):
         return {"success": True}
     except Exception as e:
         trace = traceback.format_exc()
-        log("py", e, trace)
+        log("py", e, trace, True)
         return {"success": False, "w": str(e)}
 
 @eel.expose
@@ -572,7 +567,7 @@ def newDict(fileName):
             )
         return {"success": True}
     except Exception as e:
-        log('py', 'at newDict', e)
+        log('py', 'at newDict', e, True)
         return {"success": False, "error": str(e)}
 
 ## == Circuit Viewer == ##
@@ -594,70 +589,115 @@ def displayPic():
 
 ## == Ports == ##
 
+
+serials = set()
+
 @eel.expose
-def openUploadFile():
+def UploadToDevice(chip, port, firmware):
+    with open("data/mcu.json", 'r') as f:
+        file = json.load(f)
+    cmd = file[chip]["upload_command"]
+    cmd = cmd.replace("{port}", port).replace("{file}", firmware)
+    if chip == "RP2040":
+        cmd = cmd.replace("$(whoami)", getpass.getuser())
+    log("py", "COMMAND:", cmd)
+
+@eel.expose
+def readDevice(port_in, baud):
+    if port_in in serials:
+        return
+
+    serials.add(port_in)
+
+    ser = serial.Serial(
+        port=port_in,
+        baudrate=baud,
+        timeout=1
+    )
+
     try:
-        file_path = open_native_file_ports_dialog()
-        log("py", f"successfully gave {file_path}", "")
-        return {"success": True, "path": file_path}
-    except Exception as e:
-        trace = traceback.format_exc()
-        log("py", e, trace)
-        return {"success": False, "e": str(e)}
+        while port_in in serials:
+            if ser.in_waiting > 0:
+                line = ser.readline().decode('utf-8').strip()
+                eel.spawn(eel.portData(f'{port_in}: {line}'))
+    finally:
+        ser.close() 
+
+@eel.expose
+def stopread(port_in):
+    serials.discard(port_in)
+
 
 
 ## == Terminal == ##
+
+virtual_cwd = os.getcwd()
+home_dir = os.path.expanduser("~")  # For ~ support
+shell = None
+
+
 @eel.expose
-def run_command(cmd: str):
-    """Run a shell command and return its stdout/stderr and exit code."""
-
-    # Basic safety: ignore empty commands
-    if not cmd.strip():
-        return {'out': '', 'err': '', 'code': 0}
-
-    # Allow simple "cd" handling in the Python side to change working dir
-    if cmd.strip().startswith('cd '):
-        try:
-            path = cmd.strip()[3:].strip()
-            # expand user and vars
-            path = os.path.expanduser(os.path.expandvars(path))
-            os.chdir(path)
-            return {
-                'out': f'Changed directory to {os.getcwd()}\n',
-                'err': '',
-                'code': 0
-            }
-        except Exception as e:
-            return {
-                'out': '',
-                'err': str(e) + '\n',
-                'code': 1
-            }
-
+def run_command(cmd, sudo_password=""):
+    global virtual_cwd
     try:
-        # Note: shell=True is convenient but can be dangerous.
-        # This runs commands in the current environment.
-        proc = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        return {
-            'out': proc.stdout,
-            'err': proc.stderr,
-            'code': proc.returncode
-        }
-    except Exception as e:
-        return {
-            'out': '',
-            'err': str(e) + '\n',
-            'code': 1
-        }
+        # handle 'cd'
+        if cmd.startswith("cd "):
+            path = cmd[3:].strip()
+            path = os.path.expanduser(path)
+            if not os.path.isabs(path):
+                path = os.path.join(virtual_cwd, path)
+            if os.path.isdir(path):
+                virtual_cwd = os.path.abspath(path)
+                return {"ok": True, "output": virtual_cwd}
+            else:
+                return {"ok": False, "output": f"No such directory: {path}"}
+
+        # sudo commands
+        if cmd.startswith("sudo"):
+            process = subprocess.Popen(
+                cmd,
+                shell=True,
+                executable=shell,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=virtual_cwd
+            )
+            stdout, stderr = process.communicate(sudo_password + "\n")
+            if process.returncode != 0:
+                return {"ok": False, "output": stderr.strip()}
+            return {"ok": True, "output": stdout.strip()}
+
+        # normal commands
+        output = subprocess.check_output(
+            cmd,
+            shell=True,
+            executable=shell,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=virtual_cwd
+        )
+        return {"ok": True, "output": output.strip()}
+
+    except subprocess.CalledProcessError as e:
+        return {"ok": False, "output": e.output.strip()}
 
 
 @eel.expose
 def get_cwd():
-    return os.getcwd()
+    return virtual_cwd
+
 
 
 ## == Ports ==##
 
+def next_id():
+    global si
+    with si_lock:
+        si += 1
+        return si
+    
 @eel.expose
 def getPorts():
     active_ports = []
@@ -670,45 +710,164 @@ def getPorts():
             s.close()
             active_ports.append(port.device)
         except (OSError, serial.SerialException):
-            # Can't open → probably inactive or in use
             pass
     return {"success": True, "ports": active_ports}
 
+@eel.expose
+def readPort(port, baud):
+    def reader():
+        try:
+            ser = serial.Serial(port, baud, timeout=1)
+            while True:
+                if ser.in_waiting:
+                    line = ser.readline().decode(errors="ignore").strip()
+                    line = f"{next_id()}$ {line}"
+                    log('py', 'Line:', line)
+                    eel.spawn(eel.Out, line)
+        except Exception as e:
+            eel.spawn(eel.Out, str(e), True)
+            log('py', "got error:", e, True)
+    
+    threading.Thread(target=reader, daemon=True).start()
+
+@eel.expose
+def upload(port, baud, firmware):
+    def uploader():
+        try:
+            ser = serial.Serial(port, baud)
+            with open(firmware, 'rb') as f:
+                while True:
+                    chunk = f.read(1024)
+                    if not chunk:
+                        break
+                    ser.write(chunk)
+                    ser.flush()
+                    time.sleep(0.01)
+            eel.spawn(eel.Out, "Upload complete.")
+        except Exception as e:
+            eel.spawn(eel.Out, str(e), True)
+            log('py', 'got error', e, True)
+
+    threading.Thread(target=uploader, daemon=True).start()
+
+
+@eel.expose
+def test():
+    for i in range(1, 300):
+        line1 = f"{next_id()}$ Test output"
+        line2 = f"{next_id()}$ Test fail"
+        eel.spawn(eel.Out, line1)
+        eel.spawn(eel.Out, line2, True)
+
 ## == Settings == ##
+
 
 @eel.expose
 def jsonmanager(proc, grp="", subgrp="", setto=""):
-    try:
-        with open("data/settings.json", 'r') as f:   
-            data = json.load(f)
-        if proc == 'g':
-            value = data[grp][subgrp]
-            return value
-        elif proc == 's':
-            data[grp][subgrp] = setto
-            with open("data/settings.json", 'w') as f:
-                json.dump(data, f, indent= 4)
-            return {"success": True}
-        elif proc == 'ga':
-            return data
-    except Exception as e:
-        log('py', 'at settings', e)
-        return {"success": False, "e": str(e)}
+    with open("data/settings.json", 'r') as f:   
+        data = json.load(f)
+    if proc == 'g':
+        value = data[grp][subgrp]
+        return value
+    
+    elif proc == 's':
+        data[grp][subgrp] = setto
+        with open("data/settings.json", 'w') as f:
+            json.dump(data, f, indent= 4)
+        return {"success": True}
+    elif proc == 'ga':
+        return data
 
 @eel.expose
-def getThemes():
-    try:
-        with open("data/data.json", 'r') as f:
-            data = json.load(f)
-        return data
-    except:
-        log('py', '', 'Error')
+def getLastWorkspace():
+    with open('data/info.json', 'r') as f:
+        data = json.load(f)
+    path = data['LastWorkspace']
+    return path
 
+@eel.expose
+def getKeybinds():
+    with open('data/keybinds.json', 'r') as f:
+        return json.load(f)
+    
+@eel.expose
+def s(name, val, subgrp=""):
+    with open('data/keybinds.json', 'r') as f:
+        data = json.load(f)
+
+    if subgrp == "":
+        # If data[name] exists and is a dict, merge instead of overwrite
+        if name in data and isinstance(data[name], dict) and isinstance(val, dict):
+            data[name].update(val)
+        else:
+            data[name] = val
+    else:
+        if name not in data or not isinstance(data[name], dict):
+            data[name] = {}
+        data[name][subgrp] = val
+
+    with open('data/keybinds.json', 'w') as f:
+        json.dump(data, f, indent=4)
+
+
+@eel.expose
+def deleteKey(name):
+    with open('data/keybinds.json', 'r') as f:
+        data = json.load(f)
+    
+    del data[name]
+
+    with open('data/keybinds.json', 'w') as f:
+        json.dump(data, f, indent=4)
+
+@eel.expose
+def addKey(name, key, action):
+    with open('data/keybinds.json', 'r') as f:
+        data = json.load(f)
+    data[name] = {
+        "keyBind": key,
+        "command": action
+    }
+    with open('data/keybinds.json', 'w') as f:
+        json.dump(data, f, indent=4)
+
+@eel.expose
+def startshell(currentdict):
+    global shell
+    system = platform.system()
+    shell_setting = jsonmanager('g', 'terminal', 'Shell')
+
+    if shell_setting.lower() == "auto":
+        if system in ("Linux", "Darwin"):
+            shell = os.environ.get("SHELL", "/bin/bash")
+
+        elif system == "Windows":
+            shell = (
+                shutil.which("pwsh")
+                or shutil.which("powershell")
+                or shutil.which("cmd")
+                or r"C:\Windows\System32\cmd.exe"
+            )
+
+    else:
+        if system == "Windows":
+            if shell_setting.lower() == "cmd":
+                shell = r"C:\Windows\System32\cmd.exe"
+            elif shell_setting.lower() in ("powershell", "pwsh"):
+                shell = (
+                    shutil.which(shell_setting)
+                    or r"C:\Program Files\PowerShell\7\pwsh.exe"
+                )
+            else:
+                shell = r"C:\Windows\System32\cmd.exe"
+        else:
+            shell = f"/bin/{shell_setting}"
+
+    log("py", "SHELL", shell)
+    run_command(f"cd {currentdict}")
 
 
 eel.init(WFOLDER)
 eel.start('index.html', size=(1200, 800), port=0)
-
-
 
 

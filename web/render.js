@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalInput = document.getElementById('modal-input');
     const modalTitle = document.getElementById('modal-title');
     let modalCallback = null;
+    let imgExist = false;
     const contextMenu = document.getElementById('context-menu');
     const contextOpen = document.getElementById('ctx-open');
     const contextRename = document.getElementById('ctx-rename');
@@ -31,60 +32,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const contextRenameDict = document.getElementById('ctx-rename-dict');
     const contextDeleteDict = document.getElementById('ctx-delete-dict');
     const contextMakeDict = document.getElementById('ctx-new-dict');
+    const contextMenuTerminal = document.getElementById('context-menu-t');
+    const contextCopyResultTerminal = document.getElementById('ctx-cr-t');
+    const contextCopyProductTerminal = document.getElementById('ctx-cp-t');
+    const contextCopyTerminal = document.getElementById('ctx-copy-t');
+    const contextClearTerminal = document.getElementById('ctx-clear-t');
 
-
-    async function applySetting(grp, subgrp, value) {
-        // all logic here
-        if (grp === "appear" && subgrp === "Theme") {
-            const themes = await eel.getThemes()();
-            const selectedTheme = themes[value];
-
-            if (!selectedTheme) {
-                console.warn("Theme not found:", value);
-                return;
-            }
-
-            // apply CSS vars
-            for (const key in selectedTheme) {
-                document.documentElement.style.setProperty(key, selectedTheme[key]);
-            }
-
-            return;
+    contextClearTerminal.addEventListener('click', function(){
+        try{
+            document.getElementById("command-list").innerHTML = "";
+            showNotification('Success', 'Was able to clear terminal')
+        } catch (e){
+            showNotification('Fail', `Could not clear notification due to ${e}`)
         }
-
-        if (grp === "appear" && subgrp === "Fontsize") {
-            document.documentElement.style.setProperty("--font-size", value + "px");
-            return;
-        }
-
-        if (grp === "appear" && subgrp === "Fontfamily") {
-            document.documentElement.style.setProperty("--font-family", value);
-            return;
-        }
-
-        if (grp === "editor" && subgrp === "Tabsize") {
-            editor.updateOptions({ tabSize: parseInt(value) });
-            return;
-        }
-
-        if (grp === "editor" && subgrp === "Wordwrap") {
-            editor.updateOptions({ wordWrap: value ? "on" : "off" });
-            return;
-        }
-
-        if (grp === "terminal" && subgrp === "Fontsize") {
-            terminal.setFontSize(parseInt(value));
-            return;
-        }
-
-        if (grp === "terminal" && subgrp === "Theme") {
-            applyTerminalTheme(value);
-            return;
-        }
-
-        // fallback
-        console.warn("No handler for:", grp, subgrp, value);
-    }
+    });
 
 
 
@@ -107,6 +68,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const tab = tabs[tabNumber];
         if (!tab) return;
+        // Terminal-specific visibility
+        document.getElementById("terminal-content").style.display = "none";
+
+        if (tab.name === 'terminal') {
+            document.getElementById("terminal-content").style.display = "block";
+            workspace = document.getElementById('workspace-name');
+            const path = workspace.dataset.path;
+            eel.startshell(path)();
+        }
+
 
         // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -152,6 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!contextmenuDict.contains(e.target)) {
             contextmenuDict.style.display = "none";
         }
+        if (!contextMenuTerminal.contains(e.target)) {
+            contextMenuTerminal.style.display = "none";
+        }
         /*
         e.preventDefault();
         e.stopPropagation();
@@ -188,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
         Array.from(fileTabs.children).forEach(function(file){
             if(file.dataset.type === 'file'){
                 let path = file.dataset.path;
-                eel.readFile(path, file.dataset.name)(function(msg){
+                eel.readFile(path, file.dataset.name)(async function(msg){
                     if (msg.success){
                         let content = msg.content
                         eel.saveFile(content)(function(msg){
@@ -262,21 +236,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // LATER BUT FOR NOW run(); for TERMINAL tab
     });
 
-    document.getElementById('save-btn').addEventListener('click', function() {
-        const content = editor.getValue();
+    document.getElementById('save-btn').addEventListener('click', async function() {
+        content = editor.getValue();
         const file_path = document.getElementById('current-file-name').dataset.path;
         if (file_path) {
-                eel.saveFile(content, file_path)(function(msg) {
-                    if (msg.success) {
-                        showNotification('Success', 'File saved successfully');
-                    } else {
-                        showNotification('Error', msg.message);
-                    }
-                });
-            } else {
-                // Show save as dialog
-                SaveAs();
+            if (await eel.jsonmanager('g', 'editor', 'Trim')() == true){
+                content = content.split('\n').map(line => line.replace(/\s+$/g, '')).join('\n');
             }
+            eel.saveFile(content, file_path)(function(msg) {
+                if (msg.success) {
+                    showNotification('Success', 'File saved successfully');
+                } else {
+                    showNotification('Error', msg.message);
+                }
+            });
+        } else {
+            // Show save as dialog
+            SaveAs();
+        }
     });
 
     document.getElementById('new-note-btn').addEventListener('click', async function() {
@@ -303,10 +280,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('save-note-btn').addEventListener('click', function() {
-        const content = editor.getValue();
+        const content = noteEditor.getValue();
         const NoteName = document.getElementById('current-note-name').textContent;
         eel.saveNote(NoteName, content)(function(msg){
-            if (msg.success){
+            if (!msg.success){
                 showNotification('Fail', `Could not save note due to ${msg.e}`);
             }
         });
@@ -317,8 +294,9 @@ document.addEventListener('DOMContentLoaded', function() {
         log('filename for dict:', fileName)
         eel.newDict(fileName)(function(msg){
             log('', msg.success);
-            if (!msg.success){
+            if (msg.success){
                 showNotification('Success', 'New Dictionary made succesfully!');
+                loadDict()
             } else{
                 showNotification('Fail', `New Dictionary could not be made due to ${msg.error}`);
             }
@@ -350,10 +328,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const img = document.createElement("img");
                     img.src = msg.img;  // your rtr/image file
                     img.alt = "Circuit Preview";
-
                     // Remove placeholder
                     if (placeholder) placeholder.remove();
-
+                    img.id = "placeholder"
+                    imgExist = true;
                     // Add image
                     imgHolder.appendChild(img);
                 } catch (e){
@@ -367,8 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('zoom-in-btn').addEventListener('click', function() {
-        if (img_exist){
-            imgBlock = document.getElementById('image');
+        if(imgExist){
+            imgBlock = document.getElementById('placeholder');
             zoomRate += 0.2;
             if (zoomRate >= 0 && zoomRate <= 2.2){
                 imgBlock.style.transform = `scale(${zoomRate})`;
@@ -379,20 +357,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('zoom-out-btn').addEventListener('click', function() {
-        if (img_exist){
-            imgBlock = document.getElementById('image');
+        if (imgExist){
+            imgBlock = document.getElementById('placeholder');
             zoomRate -= 0.2;
             if (zoomRate >= 0 && zoomRate <= 2.2){
                 imgBlock.style.transform = `scale(${zoomRate})`;
             } else {
                 zoomRate = 1;
             }
-        } 
+        }
     });
 
-    document.getElementById('restart-terminal-btn').addEventListener('click', function() {
-        // LATER but for now ResetTerminal();
-    });
 
 
     document.getElementById('port-select-btn').addEventListener('click', function() {
@@ -446,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const newName = await showModal('Enter new name', name);
         if (newName && newName.trim() !== '') {
-            eel.renameFile(newName, name, path)(function(msg) {
+            eel.renameFile(newName, path, name)(function(msg) {
                 if (msg.success) {
                     showNotification('Success', 'Renamed successfully');
                     // Refresh the file tree
@@ -460,12 +435,11 @@ document.addEventListener('DOMContentLoaded', function() {
         contextMenu.style.display = "none";
     });
 
-    contextDelete.addEventListener('click', function() {
+    contextDelete.addEventListener('click', async function() {
         const path = contextMenu.dataset.path;
         const name = contextMenu.dataset.name;
         const type = contextMenu.dataset.type;
-        
-        if (confirm(`Are you sure you want to delete ${name}?`)) {
+        if (await confirmBefore(`Are you sure you want to delete ${name}?`)) {
             eel.deleteFile(path)(function(msg) {
                 if (msg.success) {
                     showNotification('Success', 'Deleted successfully');
@@ -551,7 +525,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    contextDeleteNotes.addEventListener('click', function(){
+    contextDeleteNotes.addEventListener('click', async function(){
+        const name = contextmenuNotes.dataset.name;
+        if (await confirmBefore(`Are you sure you want to delete ${name}?`)){
         eel.deleteFile(contextmenuNotes.dataset.path)(function(msg){
             if (msg.success == true){
                 showNotification('Succes', 'Was able to delete Notes');
@@ -560,6 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showNotification('Fail', `could not delete file due to ${msg.message}`);
             }
         });
+    }
     });
 
 
@@ -585,15 +562,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    contextDeleteDict.addEventListener('click', function(){
-        eel.deleteFile(contextmenuDict.dataset.path)(function(msg){
-            if (msg.success == true){
-                showNotification('Succes', 'Was able to delete Dictionary');
-                loadNotes();
-            } else{
-                showNotification('Fail', `could not delete file due to ${msg.message}`);
-            }
-        });
+    contextDeleteDict.addEventListener('click', async function(){
+        const name = contextmenuDict.dataset.name;
+        if (await confirmBefore(`Are you sure you want to delete ${name}?`)){
+            eel.deleteFile(contextmenuDict.dataset.path)(function(msg){
+                if (msg.success == true){
+                    showNotification('Succes', 'Was able to delete Dictionary');
+                    loadDict();
+                } else{
+                    showNotification('Fail', `could not delete file due to ${msg.message}`);
+                }
+            });
+        }
     });
 
 
@@ -609,6 +589,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    contextCopyResultTerminal.addEventListener('click', function(){
+        try{
+            navigator.clipboard.writeText(contextMenuTerminal.dataset.result);
+            showNotification('Success', 'Result copied to clipboard!');
+        }
+        catch{
+            showNotification('Fail', 'Result could not be copied to clipboard');
+        }
+    });
+
+    contextCopyProductTerminal.addEventListener('click', function(){
+        try{
+            navigator.clipboard.writeText(contextMenuTerminal.dataset.cmd);
+            showNotification('Success', 'Command copied to clipboard!');
+        }
+        catch{
+            showNotification('Fail', 'Command could not be copied to clipboard');
+        }
+    });
+
+    contextCopyTerminal.addEventListener('click', function(){
+        try{
+            navigator.clipboard.writeText(`${contextMenuTerminal.dataset.cmd} Result: ${contextMenuTerminal.dataset.result}`);
+            showNotification('Success', 'Console copied to clipboard!');
+        }
+        catch {
+            showNotification('Success', 'Console could not be copied to clipboard');
+        }
+    });
 
     document.addEventListener('keydown', function(e){
         if (e.altKey && !isNaN(e.key)) {
@@ -621,8 +630,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // === MAIN === //
-        updateTime();
-        setInterval(updateTime, 1000);
+    updateTime();
+    setInterval(updateTime, 1000);
+    startUp()
+   
 
     // === FUNCTIONS === //
     window.refresh = function(type){
@@ -632,10 +643,132 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'Dict': loadDict();
         }
     }
+
+    async function startUp(){
+        if (await eel.jsonmanager('g', 'app', 'Restore')() === true){
+            document.querySelector('.app-container').style.display = 'block';
+            path = await eel.getLastWorkspace()();
+            log('Restor', path);
+            document.getElementById('workspace-name').textContent = path.split('/').pop() || path.split('\\').pop();
+            document.getElementById('workspace-name').dataset.path = path;
+
+            eel.listFiles(path)(function(msg){
+                populateFiles(msg.files);
+            });
+            
+        } else{
+            log('RESTORE', eel.jsonmanager('g', 'app', 'Restore')())
+            wScreen = document.getElementById('welcome-screen');
+            wScreen.style.display = 'flex'
+        }
+    }
+
+
+    async function editLoad(){
+        window.editor = null;
+        theme = await eel.jsonmanager('g', 'appear', 'Editortheme')();
+        fontsize = await eel.jsonmanager('g', 'appear', 'Fontsize')();
+        miniMap = await eel.jsonmanager('g', 'appear', 'Minimap')();
+        lines = await eel.jsonmanager('g', 'appear', 'Linenumber')() === true ? "on" : "off";
+        tabs = parseInt(String(await eel.jsonmanager('g', 'editor', 'Tabsize')()).trim(), 10) || 4;
+        wrap = await eel.jsonmanager('g', 'editor', 'Wordwrap')() === true ? "on" : "off";
+        bracket = await eel.jsonmanager('g', 'editor', 'Fillbracket')() === true ? "always" : "never";
+        form = await eel.jsonmanager('g', 'editor', 'Formatsave')()
+        style = await eel.jsonmanager('g', 'editor', 'Cursorstyle')()
+        blink = await eel.jsonmanager('g', 'editor', 'Cursorblink')() == true ? "bink" : "solid"
+
+        log("setting:", `${form}`)
+
+        window.editorReady = new Promise(resolve => {
+            require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' }});
+            require(['vs/editor/editor.main'], function() {
+                window.editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: '// Main editor!',
+                    language: 'plaintext',
+                    theme: theme,
+                    automaticLayout: true,
+                    fontSize: fontsize,
+                    minimap: { enabled: miniMap },
+                    lineNumbers: lines,
+                    tabSize: tabs,
+                    insertSpaces: true,
+                    wordWrap: wrap,
+                    autoClosingBrackets: bracket,
+                    formatOnPaste: form,
+                    formatOnType: form,
+                    cursorStyle: style, 
+                    cursorBlinking: blink,
+                });
+
+                window.noteEditor = monaco.editor.create(document.getElementById('note-editor'), {
+                    value: '// Notes editor!',
+                    language: 'plaintext',
+                    theme: theme,
+                    automaticLayout: true,
+                    fontSize: fontsize,
+                    minimap: { enabled: miniMap },
+                    lineNumbers: lines,
+                    tabSize: tabs,
+                    insertSpaces: true,
+                    wordWrap: wrap,
+                    autoClosingBrackets: bracket,
+                    formatOnPaste: form,
+                    formatOnType: form,
+                    cursorStyle: style, 
+                    cursorBlinking: blink,
+                });
+
+                window.dictEditor = monaco.editor.create(document.getElementById('dictionary-editor'), {
+                    value: '// Dictionary editor!',
+                    language: 'plaintext',
+                    theme: theme,
+                    automaticLayout: true,
+                    fontSize: fontsize,
+                    minimap: { enabled: miniMap },
+                    lineNumbers: lines,
+                    tabSize: tabs,
+                    insertSpaces: true,
+                    wordWrap: wrap,
+                    autoClosingBrackets: bracket,
+                    formatOnPaste: form,
+                    formatOnType: form,
+                    cursorStyle: style, 
+                    cursorBlinking: blink,
+                });
+
+
+                editor.addCommand(
+                    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+                    async () => {
+                        showNotification('Success', 'Saved file')
+                        await editor.getAction('editor.action.formatDocument').run(); // works for any language
+                        code = editor.getValue();
+                        if (await eel.jsonmanager('g', 'editor', 'Trim')() == true){
+                            code = code.split('\n').map(line => line.replace(/\s+$/g, '')).join('\n');
+                        }
+                        await eel.saveFile(code, document.getElementById('current-file-name').dataset.path)();
+                    }
+                );
+
+
+                resolve(window.editor); // resolves when the main editor is ready
+            });
+        });
+        autosaveLoop();
+    }
+
+
+    
+    editLoad();
+
+    
     // == EDITOR == //
     window.loadEditor = function(){
         const workspace = document.getElementById('workspace-name');
         const path = workspace.dataset.path;
+        dictEditor.getDomNode().style.display = "none";
+        noteEditor.getDomNode().style.display = "none";
+        editor.getDomNode().style.display = "flex";
         loadWorkspace(path)
     }
     function loadWorkspace(path){
@@ -644,12 +777,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('welcome-screen').style.display = 'none';
                 document.querySelector('.app-container').style.display = 'block';
                 document.getElementById('workspace-name').textContent = path.split('/').pop() || path.split('\\').pop();
-                workspace = document.getElementById('workspace-name');
-                workspace.dataset.path = path;
+                document.getElementById('workspace-name').dataset.path = path;
                 populateFiles(msg.files);
             } else{
                 showNotification('Fail', msg.error);
             }
+        });
+    }
+    async function confirmBefore(title) {
+        if (await eel.jsonmanager('g', 'app', "Confirm")() === false){
+            return true;
+        }
+        log('confirm:', await eel.jsonmanager('g', 'app', "Confirm")())
+        return new Promise(resolve => {
+            const modalTitle = document.getElementById('modal-title-kn');
+            const modal = document.getElementById('modal-kn');
+            const modalOk = document.getElementById('modal-ok-kn');
+            const modalCancel = document.getElementById('modal-cancel-kn');
+            const modalClose = document.getElementById('modal-close-kn');
+
+            modalTitle.textContent = title;
+            modal.classList.add('show');
+
+            // Named handlers
+            const okHandler = () => {
+                resolve(true);
+                closeModal();
+            };
+
+            const cancelHandler = () => {
+                resolve(false);
+                closeModal();
+            };
+
+            const closeHandler = () => {
+                closeModal();
+            };
+
+            function closeModal() {
+                modal.classList.remove('show');
+                removeListeners();
+            }
+
+            function removeListeners() {
+                modalOk.removeEventListener('click', okHandler);
+                modalCancel.removeEventListener('click', cancelHandler);
+                modalClose.removeEventListener('click', closeHandler);
+            }
+
+            // Attach event listeners
+            modalOk.addEventListener('click', okHandler);
+            modalCancel.addEventListener('click', cancelHandler);
+            modalClose.addEventListener('click', closeHandler);
         });
     }
 
@@ -848,6 +1027,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // == NOTES == //
 
     window.loadNotes = function(){
+        dictEditor.getDomNode().style.display = "none";
+        noteEditor.getDomNode().style.display = "flex";
+        editor.getDomNode().style.display = "none";
         eel.listNotes()(function(msg){
             if (msg.success){
                 populateNotesList(msg.Notes)
@@ -909,6 +1091,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // == DICTIOANRY == //
 
     window.loadDict = function(){
+        dictEditor.getDomNode().style.display = "flex";
+        noteEditor.getDomNode().style.display = "none";
+        editor.getDomNode().style.display = "none";
         eel.listDict()(function(msg){
             if (msg.success){
                 populateDictList(msg.Dict)
@@ -967,64 +1152,96 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     // == TERMINAL == //
-    let history = [];
-    let histPos = 0;
+    const inputBox = document.getElementById('command-input');
+    const commandList = document.getElementById('command-list');
+    const sudoBox = document.getElementById('sudo-password');
+    const sudoButton = document.getElementById('sudo-submit');
 
-	// Append line as <li> inside UL
-	function appendLine(text, cls) {
-		const out = document.getElementById('output');
-		const li = document.createElement('li');
-		li.className = cls || '';
-		li.textContent = text;
-		out.appendChild(li);
-		out.scrollTop = out.scrollHeight; // auto-scroll
-	}
+    let pendingSudoCommand = "";
 
-	async function refreshCwd() {
-		const cwd = await eel.get_cwd()();
-		document.getElementById('cwd').textContent = cwd;
+    inputBox.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            const command = inputBox.value.trim();
+            if (command === "") return;
 
-		const out = document.getElementById('output');
-		out.scrollTop = out.scrollHeight;
-	}
+            // Detect sudo commands
+            if (command.startsWith('sudo')) {
+                pendingSudoCommand = command;
+                sudoBox.style.display = "block";
+                sudoButton.style.display = "inline";
+                sudoBox.focus();
+            } else {
+                runCommand(command);
+            }
+            inputBox.value = "";
+        }
+    });
 
-	async function runCmd(cmd) {
-		appendLine('$ ' + cmd);
-		const r = await eel.run_command(cmd)();
-		if (r.out) appendLine(r.out, 'output-out');
-		if (r.err) appendLine(r.err, 'output-err');
-		await refreshCwd();
-	}
+    sudoButton.addEventListener('click', function() {
+        const password = sudoBox.value;
+        if (pendingSudoCommand && password) {
+            runCommand(pendingSudoCommand, password);
+            pendingSudoCommand = "";
+            sudoBox.value = "";
+            sudoBox.style.display = "none";
+            sudoButton.style.display = "none";
+        }
+    });
 
-	window.addEventListener('load', async () => {
-		const input = document.getElementById('cmd-input');
-		await refreshCwd();
+    async function runCommand(command, sudoPassword = "") {
+        const cwd = await eel.get_cwd()();
+        const liPrompt = document.createElement('li');
+        liPrompt.textContent = cwd + " $ " + command;
+        size = await eel.jsonmanager('g', 'terminal', 'Fontsize')();
+        liPrompt.style.fontSize = `${size}px`;
+        liPrompt.addEventListener('contextmenu', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (await eel.jsonmanager('g', 'terminal', 'Rightclick')()===true){
+                // Show menu at mouse position
+                contextMenuTerminal.style.display = "block";
+                contextMenuTerminal.style.left = `${e.pageX}px`;
+                contextMenuTerminal.style.top = `${e.pageY}px`;
 
-		input.addEventListener('keydown', async (e) => {
-			if (e.key === 'Enter') {
-				const cmd = input.value;
-				if (cmd.trim()) {
-					history.push(cmd);
-					histPos = history.length;
-				}
-				input.value = '';
-				await runCmd(cmd);
+                // Store details for button actions
+                contextMenuTerminal.dataset.result = liResult.innerText;
+                contextMenuTerminal.dataset.cmd = liPrompt.innerText;
+            } else {}
+        })
+        liPrompt.classList.add("Terminal-i-o");
+        commandList.appendChild(liPrompt);
 
-			} else if (e.key === 'ArrowUp') {
-				if (history.length === 0) return;
-				histPos = Math.max(0, histPos - 1);
-				input.value = history[histPos] || '';
-				setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
-				e.preventDefault();
 
-			} else if (e.key === 'ArrowDown') {
-				histPos = Math.min(history.length, histPos + 1);
-				input.value = history[histPos] || '';
-				setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
-				e.preventDefault();
-			}
-		});
-	});
+        const result = await eel.run_command(command, sudoPassword)();
+        
+        const liResult = document.createElement('li');
+        liResult.style.fontSize = `${size}px`;
+        if (!result.ok) {
+            liResult.textContent = "❌ " + result.output;
+            liResult.style.color = "red";
+        } else {
+            liResult.textContent = result.output;
+        }
+        
+        liResult.addEventListener('contextmenu', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (await eel.jsonmanager('g', 'terminal', 'Rightclick')()===true){
+                // Show menu at mouse position
+                contextMenuTerminal.style.display = "block";
+                contextMenuTerminal.style.left = `${e.pageX}px`;
+                contextMenuTerminal.style.top = `${e.pageY}px`;
+
+                // Store details for button actions
+                contextMenuTerminal.dataset.result = liResult.innerText;
+                contextMenuTerminal.dataset.cmd = liPrompt.innerText;
+            } else{}
+        });
+        liResult.classList.add("Terminal-i-o");
+        commandList.appendChild(liResult);
+
+        commandList.scrollTop = commandList.scrollHeight;
+    }
 
 
 
@@ -1050,12 +1267,116 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    loadPorts()
+
+    function Out(output, error= false){
+        pTerminal = document.getElementById('ports-terminal');
+        li = document.createElement('li');
+        li.textContent = output
+        li.classList.add("port-output")
+        if (error){
+            li.style.color = "red"
+        }
+
+        pTerminal.appendChild(li)
+        pTerminal.scrollTop = pTerminal.scrollHeight;
+    }
+    eel.expose(Out)
+
+
 
 
 
 
 
     // == Setting == //
+
+    async function loadSettingsUI(){
+        if (await eel.jsonmanager('g', 'appear', 'Theme')()==='dark'){
+            document.getElementById('settings-dark-theme').focus();
+        } else{
+            document.getElementById('settings-light-theme').focus();
+        }
+
+        document.getElementById('editor-theme-select').value = await eel.jsonmanager('g', 'appear', 'Editortheme')();
+
+        document.getElementById('font-family-select').value=  await eel.jsonmanager('g', 'appear', 'Fontfamily')();
+
+        document.getElementById('font-size-slider').value = await eel.jsonmanager('g', 'appear', 'Fontsize')();
+
+        document.getElementById('font-size-value').innerText = `${await eel.jsonmanager('g', 'appear', 'Fontsize')()}px`;
+
+        document.getElementById('sidebar-width-slider').innerText = `${await eel.jsonmanager('g', 'appear', 'Sidebar')()}px`;
+
+        document.getElementById('sidebar-width-slider').value = await eel.jsonmanager('g', 'appear', 'Sidebar')();
+
+        document.getElementById('show-minimap-checkbox').checked = await eel.jsonmanager('g', 'appear', 'Minimap')();
+
+        document.getElementById('show-line-numbers-checkbox').checked = await eel.jsonmanager('g', 'appear', 'Linenumber')();
+
+        document.getElementById('tab-size-slider').value = await eel.jsonmanager('g', 'editor', 'Tabsize')();
+
+        document.getElementById('tab-size-value').innerText = `${await eel.jsonmanager('g', 'editor', 'Tabsize')()} spaces`;
+
+        document.getElementById('insert-spaces-checkbox').checked = await eel.jsonmanager('g', 'editor', 'Space')();
+
+        document.getElementById('word-wrap-checkbox').checked = await eel.jsonmanager('g', 'editor', 'Wordwrap')();
+
+        document.getElementById('auto-close-brackets-checkbox').checked = await eel.jsonmanager('g', 'editor', 'Fillbracket')();
+
+        document.getElementById('trim-trailing-whitespace-checkbox').checked = await eel.jsonmanager('g', 'editor', 'Trim')();
+
+        document.getElementById('format-on-save-checkbox').checked = await eel.jsonmanager('g', 'editor', 'Formatsave')();
+
+        document.getElementById('cursor-style-select').value = await eel.jsonmanager('g', 'editor', 'Cursorstyle')();
+
+        document.getElementById('cursor-blink-checkbox').checked = await eel.jsonmanager('g', 'editor', 'Cursorblink')();
+
+        document.getElementById('shell-select').value=  await eel.jsonmanager('g', 'terminal', 'Shell')();
+
+        document.getElementById('terminal-font-size-slider').value=  await eel.jsonmanager('g', 'terminal', 'Fontsize')();
+
+        document.getElementById('terminal-font-size-value').innerText=  `${await eel.jsonmanager('g', 'terminal', 'Fontsize')()}px`;
+
+        document.getElementById('terminal-theme-select').value = await eel.jsonmanager('g', 'terminal', 'Theme')();
+        
+        document.getElementById('right-click-action-checkbox').checked = await eel.jsonmanager('g', 'terminal', 'Rightclick')();
+
+        document.getElementById('autosave-interval-slider').value=  await eel.jsonmanager('g', 'app', 'Autotime')();
+
+        document.getElementById('autosave-interval-value').innerText=  `${await eel.jsonmanager('g', 'app', 'Autotime')()} seconds`;
+
+        document.getElementById('restore-session-checkbox').checked = await eel.jsonmanager('g', 'app', 'Restore')();
+
+        document.getElementById('confirm-delete-checkbox').checked = await eel.jsonmanager('g', 'app', 'Confirm')();
+
+        document.getElementById('auto-update-checkbox').checked = await eel.jsonmanager('g', 'app', 'Update')();  
+        
+        document.getElementById('logging-select').value = await eel.jsonmanager('g', 'app', 'log')();  
+
+    }
+
+    document.getElementById('font-size-slider').addEventListener('input', async function(){
+        document.getElementById('font-size-value').innerText = `${await eel.jsonmanager('g', 'appear', 'Fontsize')()}px`;
+    });
+
+    document.getElementById('sidebar-width-slider').addEventListener('input', async function(){
+        document.getElementById('sidebar-width-value').innerText = `${await eel.jsonmanager('g', 'appear', 'Sidebar')()}px`;
+    });
+
+    document.getElementById('tab-size-slider').addEventListener('input', async function(){
+        document.getElementById('tab-size-value').innerText = `${await eel.jsonmanager('g', 'editor', 'Tabsize')()} spaces`;
+    });
+
+    document.getElementById('terminal-font-size-slider').addEventListener('input', async function(){
+        document.getElementById('terminal-font-size-value').innerText = `${await eel.jsonmanager('g', 'terminal', 'Fontsize')()}px`;
+    });
+
+    document.getElementById('autosave-interval-slider').addEventListener('input', async function(){
+        document.getElementById('autosave-interval-value').innerText = `${await eel.jsonmanager('g', 'app', 'Autotime')()} seconds`;
+    });
+    
+    loadSettingsUI()
 
     window.switchSetting = function(tabNumber) {
         log('Switching to settings tab:', tabNumber);
@@ -1096,6 +1417,81 @@ document.addEventListener('DOMContentLoaded', function() {
             log(e + '', 'while switching settings tabs');
         }
     }
+    
+    function applySetting(grp, subgrp, val){
+        eel.jsonmanager('s', grp, subgrp, val)();
+    }
+    const themes = {
+        light: {
+            "--bg-primary": "#ffffff",
+            "--bg-secondary": "#f6f8fa",
+            "--bg-tertiary": "#e1e4e8",
+            "--bg-shade": "225, 228, 232, 0.2",
+            "--bg-elevated": "#afafafff",
+            "--border": "#d1d5da",
+            "--border-hover": "#959da5",
+            "--text": "#24292e",
+            "--text-secondary": "#586069",
+            "--text-muted": "#6a737d",
+            "--accent": "#0366d6",
+            "--accent-hover": "#0256cc",
+            "--success": "#28a745",
+            "--warning": "#ffd33d",
+            "--error": "#d73a49",
+            "--purple": "#6f42c1",
+            "--shadow": "rgba(0, 0, 0, 0.1)",
+            "--shadow-lg": "rgba(0, 0, 0, 0.15)"
+        },
+        dark : {
+            "--bg-primary": "#0d1117",
+            "--bg-secondary": "#161b22",
+            "--bg-tertiary": "#1c2128",
+            "--bg-shade:": "28, 33, 40, 0.9",
+            "--bg-elevated": "#21262d",
+            "--border": "#30363d",
+            "--border-hover": "#484f58",
+            "--text": "#c9d1d9",
+            "--text-secondary": "#8b949e",
+            "--text-muted": "#6e7681",
+            "--accent": "#58a6ff",
+            "--accent-hover": "#79c0ff",
+            "--success": "#3fb950",
+            "--warning": "#d29922",
+            "--error": "#f85149",
+            "--purple": "#bc8cff",
+            "--shadow": "rgba(0, 0, 0, 0.4)",
+            "--shadow-lg": "rgba(0, 0, 0, 0.6)"
+        }
+    };
+
+    async function applyAllSettings(){
+        const settings =  await eel.jsonmanager('ga')();
+
+        /// === APPEAR === //
+
+        // = Theme = // 
+        if (settings.appear.Theme === "light"){
+            Object.entries(themes.light).forEach(function ([key, value]) {
+                document.documentElement.style.setProperty(key, value);
+            });
+        }
+        else{
+            Object.entries(themes.dark).forEach(function ([key, value]) {
+                document.documentElement.style.setProperty(key, value);
+            });
+        }
+
+        document.body.style.fontFamily = settings.appear.Fontfamily;
+        // document.documentElement.style.setProperty('--Sidebar', settings.appear.Sidebar);
+
+        if (await eel.jsonmanager('g', 'terminal', 'Theme')()=== "light"){
+            document.documentElement.style.setProperty('--terminal-background', '#c0b9b9')
+            document.documentElement.style.setProperty('--terminal-secondary', '#e0dada')
+            document.documentElement.style.setProperty('--terminal-text', '#000000ff')
+        }
+        
+        
+    }
 
     window.set = async function(grp, subgrp, value){
         log('from js', `${grp}, ${subgrp} ${value}`)
@@ -1105,5 +1501,46 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         await applySetting(grp, subgrp, value);
+        await applyAllSettings()
     }
+
+    applyAllSettings()
+    async function getTime() {
+        const t = Number(await eel.jsonmanager('g', 'app', 'Autotime')());
+        const ms = t * 1000;
+        return ms;
+    }
+
+    async function autosaveLoop() {
+        if (!window.editor || typeof editor.getValue !== 'function') {
+            setTimeout(autosaveLoop, 500);
+            return;
+        }
+        const delay = await getTime();
+
+        let content = editor.getValue();
+        const file_path = document.getElementById('current-file-name').dataset.path;
+
+        if (file_path) {
+            if (await eel.jsonmanager('g', 'editor', 'Trim')()) {
+                content = content
+                    .split('\n')
+                    .map(line => line.replace(/\s+$/g, ''))
+                    .join('\n');
+            }
+
+            eel.saveFile(content, file_path)(function(msg) {
+                if (!msg.success) {
+                    showNotification('Error', msg.message);
+                } else{
+                    // showNotification('Success', 'Saved successfuly') // good for debug
+                }
+            });
+        }
+
+        setTimeout(autosaveLoop, delay);
+    }
+
+    
+
 });

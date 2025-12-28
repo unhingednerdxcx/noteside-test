@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NotesIDE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="xterm.css" />
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
 </head>
 <body>
     
@@ -79,7 +80,7 @@
                 <i class="fas fa-book"></i>
                 <span>Dictionary</span>
             </button>
-            <button class="top-tab" data-tab="ports" onClick="switchTab(4); loadPorts()">
+            <button class="top-tab" data-tab="ports" onClick="switchTab(4);">
                 <i class="fas fa-plug"></i>
                 <span>Ports</span>
             </button>
@@ -306,7 +307,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div id="ports-terminal" class="terminal-xterm" tabindex="0"></div>
+                            <div id="ports-terminal" style="max-height:99vh; overflow:auto; color: black "></div>
                         </div>
                     </div>
                 </div>
@@ -344,7 +345,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-content" id="image-preview">
-                                    <div class="preview-placeholder">
+                                    <div class="preview-placeholder" id="placeholder">
                                         <i class="fas fa-microchip"></i>
                                         <h3>No Image Loaded</h3>
                                         <p>Load an image file to view it here</p>
@@ -356,34 +357,20 @@
                 </div>
             </div>
 
+            <!-- TERMINAL NEEDS TO BE ADDED-->
+            <div id="terminal-content">
+                <div id="output-area" class="output-area">
+                    <ul id="command-list" class="command-list"></ul>
+                </div>
 
-			<div id="terminal" class="terminal-container">
-				<!-- header -->
-				<div class="terminal-header">
-					<span class="terminal-title">
-						<i class="fas fa-terminal"></i>
-						<span>Terminal</span>
-					</span>
-					<div class="terminal-actions">
-						<button class="terminal-btn primary" id="restart-terminal-btn">
-							<i class="fas fa-redo"></i>
-							<span>Restart</span>
-						</button>
-					</div>
-				</div>
+                <!-- Main command input -->
+                <input type="text" id="command-input" placeholder="Type a command and press Enter" class="Terminal-i-o">
 
-				<!-- output scrollable -->
-				<ul id="output" role="log" aria-live="polite"></ul>
-
-				<!-- prompt fixed at bottom -->
-				<div id="prompt-line">
-					<span id="cwd">/</span>
-					<span class="prompt">$</span>
-					<input id="cmd-input" autofocus autocomplete="off" spellcheck="false" />
-				</div>
-			</div>
-
-
+                <!-- Hidden sudo password input -->
+                <input type="password" id="sudo-password" placeholder="Enter sudo password" style="display:none;">
+                <button id="sudo-submit" style="display:none;">Submit</button>
+            </div>
+    
 
 
 
@@ -397,19 +384,19 @@
                                 <i class="fas fa-palette"></i>
                                 <span>Appearance</span>
                             </button>
-                            <button class="settings-category" data-category="editor" id="settings-editor" onClick="switchSetting(2)">
+                            <button class="settings-category" data-category="editor" id="settings-editor" onclick="switchSetting(2)">
                                 <i class="fas fa-edit"></i>
                                 <span>Editor</span>
                             </button>
-                            <button class="settings-category" data-category="terminal" id="settings-terminal" onClick="switchSetting(3)">
+                            <button class="settings-category" data-category="terminal" id="settings-terminal" onclick="switchSetting(3)">
                                 <i class="fas fa-terminal"></i>
                                 <span>Terminal</span>
                             </button>
-                            <button class="settings-category" data-category="application" id="settings-application" onClick="switchSetting(4)">
+                            <button class="settings-category" data-category="application" id="settings-application" onclick="switchSetting(4)">
                                 <i class="fas fa-cog"></i>
                                 <span>Application</span>
                             </button>
-                            <button class="settings-category" data-category="keybindings" id="settings-key" onClick="switchSetting(5)">
+                            <button class="settings-category" data-category="keybindings" id="settings-key" onclick="switchSetting(5)">
                                 <i class="fas fa-keyboard"></i>
                                 <span>Keybindings</span>
                             </button>
@@ -431,23 +418,22 @@
                                     <label class="settings-label">Application Theme</label>
 
                                     <div class="theme-options">
-                                        
-                                        <button class="theme-option" data-theme="dark" onclick="set('appear', 'Theme', 'dark')">
+                                        <button class="theme-option" id="settings-dark-theme" onclick="set('appear', 'Theme', 'dark')">
                                             <div class="theme-preview dark-theme">
                                             <div class="theme-header"></div>
                                             <div class="theme-sidebar"></div>
                                             <div class="theme-content"></div>
                                             </div>
-                                            <span style="color: #ffffff;">Dark</span>
+                                            <span style="color: var(--text-secondary);">Dark</span>
                                         </button>
 
-                                        <button class="theme-option" data-theme="light" onclick="set('appear', 'Theme', 'light')">
+                                        <button class="theme-option" id="settings-light-theme" onclick="set('appear', 'Theme', 'light')">
                                             <div class="theme-preview light-theme">
                                             <div class="theme-header"></div>
                                             <div class="theme-sidebar"></div>
                                             <div class="theme-content"></div>
                                             </div>
-                                            <span style="color: #ffffff;">Light</span>
+                                            <span style="color: var(--text-secondary);">Light</span>
                                         </button>
                                     </div>
 
@@ -481,7 +467,7 @@
                                 <div class="settings-option">
                                     <label class="settings-label">Font Size</label>
                                     <div class="slider-container">
-                                        <input type="range" class="settings-slider" id="font-size-slider" min="10" max="24" value="14" oninput="set('appear', 'Fontsize', this.value)">
+                                        <input type="range" class="settings-slider" id="font-size-slider" min="10" max="24" value="14" oninput="set('appear', 'Fontsize', this.value); ">
                                         <span class="slider-value" id="font-size-value">14px</span>
                                     </div>
                                 </div>
@@ -492,7 +478,7 @@
                                 <div class="settings-option">
                                     <label class="settings-label">Sidebar Width</label>
                                     <div class="slider-container">
-                                        <input type="range" class="settings-slider" id="sidebar-width-slider" min="180" max="300" value="220" oninput="set('appear','Sidebar', this.value)">
+                                        <input type="range" class="settings-slider" id="sidebar-width-slider" min="180" max="300" value="220"[] oninput="set('appear','Sidebar', this.value)">
                                         <span class="slider-value" id="sidebar-width-value">220px</span>
                                     </div>
                                 </div>
@@ -616,19 +602,10 @@
                                 <h3>Appearance</h3>
                                 <div class="settings-option">
                                     <label class="settings-label">Terminal Theme</label>
-                                    <select class="settings-select" id="terminal-theme-select" onchange="set('terminal', 'theme', this.value)">
-                                        <option value="default">Default (Dark)</option>
+                                    <select class="settings-select" id="terminal-theme-select" onchange="set('terminal', 'Theme', this.value)">
+                                        <option value="dark">Default (Dark)</option>
                                         <option value="light">Light</option>
-                                        <option value="solarized-dark">Solarized Dark</option>
-                                        <option value="solarized-light">Solarized Light</option>
-                                        <option value="monokai">Monokai</option>
                                     </select>
-                                </div>
-                                <div class="settings-option">
-                                    <label class="settings-checkbox">
-                                        <input type="checkbox" id="terminal-cursor-blink-checkbox" onchange="set('terminal', 'Cursorblink', this.checked)">
-                                        <span>Cursor Blinking</span>
-                                    </label>
                                 </div>
                             </div>
                             
@@ -636,14 +613,8 @@
                                 <h3>Behavior</h3>
                                 <div class="settings-option">
                                     <label class="settings-checkbox">
-                                        <input type="checkbox" id="copy-on-select-checkbox" onchange="set('terminal', 'Copyonselect', this.checked)">
-                                        <span>Copy On Selection</span>
-                                    </label>
-                                </div>
-                                <div class="settings-option">
-                                    <label class="settings-checkbox">
                                         <input type="checkbox" id="right-click-action-checkbox" onchange="set('terminal', 'Rightclick', this.checked)">
-                                        <span>Right Click Paste</span>
+                                        <span>Right Click for context menu?</span>
                                     </label>
                                 </div>
                             </div>
@@ -696,10 +667,10 @@
                             </div>
                             
                             <div class="settings-section">
-                                <h3>Advanced</h3>
+                                <h3>Debugger</h3>
                                 <div class="settings-option">
-                                    <label class="settings-label">Telemetry</label>
-                                    <select class="settings-select" id="telemetry-select" onchange="set('app', 'Tele', this.value)">
+                                    <label class="settings-label">Logging (TURN OFF TO SAVE SPACE)</label>
+                                    <select class="settings-select" id="logging-select" onchange="set('app', 'log', this.value)">
                                         <option value="on">On</option>
                                         <option value="off">Off</option>
                                         <option value="error">Error Reports Only</option>
@@ -722,17 +693,12 @@
                             </div>
                             
                             <div class="keybindings-container">
-                                <div class="keybindings-search">
-                                    <input type="text" class="settings-input" id="keybindings-search-input" placeholder="Search keybindings...">
-                                </div>
-                                
                                 <div class="keybindings-table-container">
                                     <table class="keybindings-table">
                                         <thead>
                                             <tr>
                                                 <th>Command</th>
                                                 <th>Keybinding</th>
-                                                <th>Source</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -741,15 +707,9 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                
-                                <div class="keybindings-actions">
-                                    <button class="settings-btn" id="edit-keybinding-btn">
-                                        <i class="fas fa-edit"></i>
-                                        Edit Keybinding
-                                    </button>
-                                    <button class="settings-btn" id="reset-keybindings-btn">
-                                        <i class="fas fa-undo"></i>
-                                        Reset To Defaults
+                                    <button class="settings-btn" id="add-keybindings-btn">
+                                        <i class="fas fa-add"></i>
+                                        Add keybinding
                                     </button>
                                 </div>
                             </div>
@@ -882,6 +842,29 @@
         </button>
     </div>
 
+    <!-- For terminal -->
+     <div class="context-menu-dict" id="context-menu-t">
+        <button class="context-menu-item-btn" id="ctx-clear-t">
+            <i class="fa-solid fa-eraser"></i>
+            <span>Clear</span>
+        </button>
+
+        <button class="context-menu-item-btn" id="ctx-cr-t">
+            <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            <span>Copy result</span>
+        </button>
+
+        <button class="context-menu-item-btn" id="ctx-cp-t">
+            <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            <span>Copy prompt</span>
+        </button>
+
+        <button class="context-menu-item-btn" id="ctx-copy-t">
+            <i class="fa-solid fa-copy"></i>
+            <span>Copy entire console</span>
+        </button>
+    </div>
+
 
 
     <!-- Modal -->
@@ -906,6 +889,21 @@
         </div>
     </div>
 
+    <div class="modal" id="modal-kn">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modal-title-kn">Modal Title</span>
+                <button class="modal-close" id="modal-close-kn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel-kn">Cancel</button>
+                <button class="btn btn-primary" id="modal-ok-kn">OK</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Dictionary Popup -->
     <div class="dictionary-popup" id="dictionary-popup">
@@ -920,45 +918,49 @@
                 <!-- Dictionary entries will be populated here -->
             </ul>
         </div>
-    </div>\
+    </div>
+
+    <!--Keybinds popup-->
+    <div id="popup" class="popup">
+        <div class="popup-header">
+            <span id="Title" class="title">Edit Command</span>
+        </div>
+
+        <div class="block">
+            <label for="modal-input">Change the command's name</label>
+            <input type="text" class="form-input" id="modal-input-name" placeholder="Enter name">
+        </div>
+
+        <div class="block">
+            <label>Change the command keybinding</label>
+            <div class="display-keybind" id="keybind-box">
+                <span id="key" class="keys">Press me</span>
+            </div>
+        </div>
+
+
+        <div class="block">
+            <label for="modal-input-action">Change the Action</label>
+            <input type="text" class="wide-input" id="modal-input-action" placeholder="Enter action">
+        </div>
+
+        <div class="popup-footer">
+            <button class="btn save" id="save-btn-modal">Save</button>
+            <button class="btn cancel" id="cancel-btn-modal">Cancel</button>
+            <button class="btn save" id="delete-btn-modal">Delete</button>
+            <button class ="btn save" id="new-btn-modal">New key</button>
+        </div>
+    </div>
 
 
    
 
 
     <script type="text/javascript" src="/eel.js"></script>
-    <script src="render.js"></script>
+    <script src = "keybinds.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.min.js"></script>
-    <script>
-        window.editor = null;
-        window.editorReady = new Promise(resolve => {
-            require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' }});
-            require(['vs/editor/editor.main'], function() {
-                window.editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: '// Main editor!',
-                    language: 'plaintext',
-                    theme: 'vs-dark',
-                    automaticLayout: true
-                });
-
-                window.noteEditor = monaco.editor.create(document.getElementById('note-editor'), {
-                    value: '// Notes editor!',
-                    language: 'plaintext',
-                    theme: 'vs-light',
-                    automaticLayout: true
-                });
-
-                window.dictEditor = monaco.editor.create(document.getElementById('dictionary-editor'), {
-                    value: '// Dictionary editor!',
-                    language: 'plaintext',
-                    theme: 'vs-dark',
-                    automaticLayout: true
-                });
-
-                resolve(window.editor); // resolves when the main editor is ready
-            });
-        });
-    </script>
+    <script src="editor.js"></script>
+    <script src="render.js"></script>
     
 </body>
 </html>

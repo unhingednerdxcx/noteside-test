@@ -69,3 +69,8 @@ setTimeout(function() {
         document.getElementById('loading-indicator').style.display = 'none';
         document.getElementById('welcome-screen').style.display = 'flex';
     }, 1000);
+
+
+
+# ports --Complete kind of // future version
+# -Main aspecs

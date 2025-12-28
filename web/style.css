@@ -2,6 +2,7 @@
   --bg-primary: #0d1117;
   --bg-secondary: #161b22;
   --bg-tertiary: #1c2128;
+  --bg-tertiarywithshade: 28, 33, 40, 0.2; 
   --bg-elevated: #21262d;
   --border: #30363d;
   --border-hover: #484f58;
@@ -17,6 +18,10 @@
   --shadow: rgba(0, 0, 0, 0.4);
   --shadow-lg: rgba(0, 0, 0, 0.6);
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --Sidebar: 220px;
+  --terminal-background: #1b1c1d;
+  --terminal-secondary: #2e2e2e;
+  --terminal-text: #ffffff;
 }
 
 * {
@@ -77,7 +82,7 @@ body {
   width: 100vw;
   height: 100vh;
   background: var(--bg-primary);
-  display: flex;
+  display: none;  
   align-items: center;
   justify-content: center;
   z-index: 9999;
@@ -342,7 +347,7 @@ body {
 
 /* Sidebar */
 .sidebar, .notes-sidebar, .dictionary-sidebar, .ports-sidebar {
-  width: 280px;
+  width: var(--Sidebar);
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   display: flex;
@@ -468,6 +473,9 @@ body {
   color: var(--accent);
   font-weight: 500;
   border-left: 3px solid var(--accent);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .file-tree-item i {
@@ -532,7 +540,6 @@ body {
 .file-tabs {
   display: flex;
   gap: 4px;
-  padding: 8px 12px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
@@ -667,16 +674,8 @@ body {
 
 
 
-#terminal {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #1e1e2f;
-  color: #f8f8f2;
-  font-family: monospace;
-  font-size: 14px;
-}
 
+/* TERMINAL */ 
 /* header stays on top */
 .terminal-header {
   display: flex;
@@ -687,42 +686,28 @@ body {
 }
 
 /* output scrolls above input */
-#output {
-  flex: 1;
+.output-area {
+  height: 300px;
   overflow-y: auto;
-  margin: 0;
+  border: 1px solid #444;
+  background: var(--terminal-background);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.Terminal-i-o{
+  color: var(--terminal-text);
+  -webkit-text-fill-color: var(--terminal-text);
+}
+#command-input, #sudo-password {
+  width: 100%;
   padding: 8px;
-  list-style: none;
-  min-height: 0; /* crucial for flexbox scrolling */
+  background: var(--terminal-secondary); 
+  color: #c5c5c5;
+  border: 1px solid #444;
 }
-
-/* each line */
-#output li {
-  white-space: pre-wrap;
-}
-
-/* prompt stays visible at bottom */
-#prompt-line {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  flex-shrink: 0;
-  border-top: 1px solid rgba(255,255,255,0.05);
-}
-
-/* cwd + prompt styling */
-#cwd { color: #8be9fd; margin-right: 8px; }
-.prompt { margin-right: 8px; }
-
-/* input styling */
-#cmd-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
+.command-list li{
+  font-size: 14px; 
 }
 
 
@@ -736,7 +721,7 @@ body {
 }
 
 .ports-sidebar {
-  width: 320px;
+  width: calc(var(--Sidebar) + 100px);
   height: 100vh;
   max-height: 1000px;
 }
@@ -904,6 +889,16 @@ body {
   overflow: hidden;
 }
 
+.port-output {
+  font-family: monospace; /* FONT */
+  background: #111;
+  color: #0f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+}
+
 .preview-header {
   background: var(--bg-tertiary);
   padding: 12px 16px;
@@ -943,7 +938,7 @@ body {
   width: 100%;
   height: 400px; /* or 100% if parent has fixed height */
   overflow: auto; /* enable scrolling */
-  background: #1e1e1e;
+  background: var(--bg-secondary);
   position: relative;
 }
 
@@ -966,10 +961,10 @@ body {
 
 /* The container should handle scrolling */
 #image-preview {
+  max-height: 80vh;
   width: 100%;
-  height: 100%;
   overflow: auto; /* ✅ scrollbars appear here */
-  background: #1e1e1e;
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -980,6 +975,7 @@ body {
   display: block;
   max-width: none;  /* ✅ allows full-size image (enables scroll) */
   max-height: none;
+  justify-content: center;
 }
 
 
@@ -995,6 +991,9 @@ body {
   color: var(--text-secondary);
 }
 
+
+
+
 /* Settings Layout */
 .settings-layout {
   display: flex;
@@ -1002,7 +1001,7 @@ body {
 }
 
 .settings-sidebar {
-  width: 240px;
+  width: var(--Sidebar);
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   padding: 16px 0;
@@ -1178,6 +1177,14 @@ body {
   transform: scale(1.05);
 }
 
+.key-row {
+  transition: all 0.3s ease
+}
+.key-row:hover{
+  background-color: rgba(var(--bg-tertiarywithshade)); 
+  outline: 2px solid var(--bg-tertiary); 
+  cursor: pointer;
+}
 
 .theme-preview {
   width: 120px;
@@ -1674,7 +1681,7 @@ body {
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar, .notes-sidebar, .dictionary-sidebar {
-    width: 220px;
+    width: var(--Sidebar);
   }
   
   .settings-main {
@@ -1685,3 +1692,96 @@ body {
     padding: 20px;
   }
 }
+
+
+.popup {
+    display: none; /* start hidden */
+    flex-direction: column;
+    gap: 15px;
+    justify-content: center; /* optional */
+    align-items: center;     /* optional */
+    position: fixed;         /* to appear above content */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    background-color: #1C2128;
+    color: #E1E4E8;
+    width: 350px;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    display: flex; /* this is important when showing it */
+}
+
+
+.popup-header .title {
+    display: inherit;
+    font-size: 1.4rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.block {
+    display: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.block label {  
+    display: inherit;
+    font-weight: 600;
+}
+
+.form-input, .wide-input {  
+    display: inherit;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+.form-input:focus, .wide-input:focus {
+    display: inherit;
+    box-shadow: 0 0 5px #4CAF50;
+    background-color: rgba(255,255,255,0.05);
+}
+
+.display-keybind {
+    display: inherit;
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    background-color: #2a2f38;
+    transition: background-color 0.2s ease;
+}
+
+.display-keybind:hover {
+    display: inherit;
+    background-color: #3a3f48;
+}
+
+.popup-footer {
+    display: inherit;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.key-btn {
+    diplay: inherit;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+

@@ -2,7 +2,7 @@
     "appear": {
         "Theme": "dark",
         "Editortheme": "Dark",
-        "Fontfamily": "Fira code",
+        "Fontfamily": "'Consolas', 'Monaco', monospace",
         "Fontsize": 14,
         "Sidebar": 220
     },
@@ -29,7 +29,7 @@
         "Restore": true,
         "Confirm": true,
         "Update": true,
-        "Tele": "on"
+        "Tele": "off"
     },
     "key": {
         
