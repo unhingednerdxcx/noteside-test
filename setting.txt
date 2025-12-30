@@ -73,4 +73,5 @@ setTimeout(function() {
 
 
 # ports --Complete kind of // future version
+# ctrl+ s situation
 # -Main aspecs

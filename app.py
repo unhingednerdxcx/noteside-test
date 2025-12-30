@@ -27,7 +27,6 @@ import ptyprocess
 import serial
 import time
 import getpass
-# test
 ## === GLOABAL VARS === ##
 
 FOLDER = os.getcwd()
@@ -48,6 +47,10 @@ si_lock = threading.Lock()
 
 #test
 
+class idecmds():
+    def pull(file):
+        for f in os.listdir(NFOLDER):
+            x
 ## === FUNCTIONS === ##
 
 def open_native_folder_dialog():
