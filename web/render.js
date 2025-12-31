@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await eel.makeFile(document.getElementById('workspace-name').dataset.path, 'NewNote')(function(msg){
                     if (msg.success){
                         showNotification('Success', 'Made new file successfully')
-                        loadWorkspace(document.getElementById('workspace-name').dataset.path) // HERE
+                        loadWorkspace(document.getElementById('workspace-name').dataset.path)
                     } else{
                         showNotification('Fail', 'could not make new file successfully')
                     }

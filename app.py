@@ -27,6 +27,8 @@ import ptyprocess
 import serial
 import time
 import getpass
+
+
 ## === GLOABAL VARS === ##
 
 FOLDER = os.getcwd()
@@ -48,9 +50,16 @@ si_lock = threading.Lock()
 #test
 
 class idecmds():
+    @staticmethod
     def pull(file):
-        for f in os.listdir(NFOLDER):
-            x
+        filepath = os.path.join(NFOLDER, file)
+        if os.path.isfile(filepath):
+            idecmds.pullJson_extract(filepath)
+    @staticmethod
+    def pullJson_extract(file):
+        with open(file, 'r') as f:
+            ....
+            
 ## === FUNCTIONS === ##
 
 def open_native_folder_dialog():
