@@ -266,6 +266,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (tab.func) tab.func();
 
+        switch (tabNumber){
+            case 4:
+                workspace.dataset.tab = "port";
+                break;
+            case 5:
+                workspace.dataset.tab = "circuit";
+                break;
+            case 6:
+                workspace.dataset.tab = "terminal";
+                break;
+            case 7:
+                workspace.dataset.tab = "settings";
+                break;
+            default:
+                break;
+        }
+
 
         // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -403,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             } else{
-                showNotification('Fail', `Could not save file due to ${msg.message}`)
+                showNotification('Fail', `Could not make file due to ${msg.message}`)
             }
         })
     });
@@ -415,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (msg.success){
                 showNotification('Success', 'File made successfully');
             } else{
-                showNotification('Fail', `Could not save file due to ${msg.message}`)
+                showNotification('Fail', `Could not make file due to ${msg.message}`)
             }
         })
     });
@@ -473,6 +490,8 @@ document.addEventListener('DOMContentLoaded', function() {
         eel.saveNote(NoteName, content)(function(msg){
             if (!msg.success){
                 showNotification('Fail', `Could not save note due to ${msg.e}`);
+            } else {
+                showNotification('Success', 'Saved note')
             }
         });
     });
@@ -497,6 +516,8 @@ document.addEventListener('DOMContentLoaded', function() {
         eel.saveDict(dictName, content)(function(msg){
             if (!msg.success){
                 showNotification('Fail', `Could not save note due to ${msg.e}`);
+            } else {
+                showNotification('Success', 'Saved dictionary')
             }
         });
     });
@@ -807,9 +828,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    document.addEventListener('keydown', function(e){
+    document.addEventListener('keydown', async function(e){
         if (e.altKey && !isNaN(e.key)) {
             switchTab(Number(e.key));
+        }
+        if((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault(); 
+            switch (document.getElementById('workspace-name').dataset.tab){
+                case 'editor':
+                    content = editor.getValue();
+                    const file_path = document.getElementById('current-file-name').dataset.path;
+                    if (file_path) {
+                        if (await eel.jsonmanager('g', 'editor', 'Trim')() == true){
+                            content = content.split('\n').map(line => line.replace(/\s+$/g, '')).join('\n');
+                        }
+                        eel.saveFile(content, file_path)(function(msg) {
+                            if (msg.success) {
+                                showNotification('Success', 'File saved successfully');
+                            } else {
+                                showNotification('Error', msg.message);
+                            }
+                        });
+                    }
+                    break;
+                case 'note':
+                    content = noteEditor.getValue();
+                    const NoteName = document.getElementById('current-note-name').textContent;
+                    eel.saveNote(NoteName, content)(function(msg){
+                        if (!msg.success){
+                            showNotification('Fail', `Could not save note due to ${msg.e}`);
+                        } else {
+                            showNotification('Success', 'Saved note')
+                        }
+                    });
+                    break;
+                case 'dict':
+                    content = dictEditor.getValue();
+                    const dictName = document.getElementById('current-dictionary-name').textContent;
+                    eel.saveDict(dictName, content)(function(msg){
+                        if (!msg.success){
+                            showNotification('Fail', `Could not save note due to ${msg.e}`);
+                        } else {
+                            showNotification('Success', 'Saved dictionary')
+                        }
+                    });
+                    break;
+                default:
+                    break;
+            }
         }
     });
 
@@ -924,19 +990,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     cursorBlinking: blink,
                 });
 
-
-                editor.addCommand(
-                    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-                    async () => {
-                        showNotification('Success', 'Saved file')
-                        await editor.getAction('editor.action.formatDocument').run(); // works for any language
-                        code = editor.getValue();
-                        if (await eel.jsonmanager('g', 'editor', 'Trim')() == true){
-                            code = code.split('\n').map(line => line.replace(/\s+$/g, '')).join('\n');
-                        }
-                        await eel.saveFile(code, document.getElementById('current-file-name').dataset.path)();
-                    }
-                );
                 editor.addCommand(monaco.KeyCode.Enter, async function(){
                     const model = editor.getModel()
                     const position = editor.getPosition()
@@ -983,6 +1036,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // == EDITOR == //
     window.loadEditor = function(){
         const workspace = document.getElementById('workspace-name');
+        workspace.dataset.tab = "editor";
         const path = workspace.dataset.path;
         dictEditor.getDomNode().style.display = "none";
         noteEditor.getDomNode().style.display = "none";
@@ -1247,6 +1301,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.loadNotes = function(){
         dictEditor.getDomNode().style.display = "none";
         noteEditor.getDomNode().style.display = "flex";
+        workspace = document.getElementById('workspace-name');
+        workspace.dataset.tab = "note";
         editor.getDomNode().style.display = "none";
         eel.listNotes()(function(msg){
             if (msg.success){
@@ -1312,6 +1368,8 @@ document.addEventListener('DOMContentLoaded', function() {
         dictEditor.getDomNode().style.display = "flex";
         noteEditor.getDomNode().style.display = "none";
         editor.getDomNode().style.display = "none";
+        workspace = document.getElementById('workspace-name');
+        workspace.dataset.tab = "dict";
         eel.listDict()(function(msg){
             if (msg.success){
                 populateDictList(msg.Dict)
@@ -1735,25 +1793,43 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const delay = await getTime();
-
-        let content = editor.getValue();
-        const file_path = document.getElementById('current-file-name').dataset.path;
-
-        if (file_path) {
-            if (await eel.jsonmanager('g', 'editor', 'Trim')()) {
-                content = content
-                    .split('\n')
-                    .map(line => line.replace(/\s+$/g, ''))
-                    .join('\n');
-            }
-
-            eel.saveFile(content, file_path)(function(msg) {
-                if (!msg.success) {
-                    showNotification('Error', msg.message);
-                } else{
-                    // showNotification('Success', 'Saved successfuly') // good for debug
+        switch (document.getElementById('workspace-name').dataset.tab){
+            case 'editor':
+                content = editor.getValue();
+                const file_path = document.getElementById('current-file-name').dataset.path;
+                if (file_path) {
+                    if (await eel.jsonmanager('g', 'editor', 'Trim')() == true){
+                        content = content.split('\n').map(line => line.replace(/\s+$/g, '')).join('\n');
+                    }
+                    eel.saveFile(content, file_path)(function(msg) {
+                        if (msg.success) {
+                            // showNotification('Success', 'File saved successfully');
+                        } else {
+                            // showNotification('Error', msg.message);
+                        }
+                    });
                 }
-            });
+                break;
+            case 'note':
+                content = noteEditor.getValue();
+                const NoteName = document.getElementById('current-note-name').textContent;
+                eel.saveNote(NoteName, content)(function(msg){
+                    if (!msg.success){
+                        // showNotification('Fail', `Could not save note due to ${msg.e}`);
+                    }
+                });
+                break;
+            case 'dict':
+                content = dictEditor.getValue();
+                const dictName = document.getElementById('current-dictionary-name').textContent;
+                eel.saveDict(dictName, content)(function(msg){
+                    if (!msg.success){
+                        // showNotification('Fail', `Could not save note due to ${msg.e}`);
+                    }
+                });
+                break;
+            default:
+                break;
         }
 
         setTimeout(autosaveLoop, delay);
