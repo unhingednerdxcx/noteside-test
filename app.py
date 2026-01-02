@@ -27,6 +27,7 @@ import ptyprocess
 import serial
 import time
 import getpass
+import yaml
 
 
 ## === GLOABAL VARS === ##
@@ -45,21 +46,173 @@ i = 0
 si = 0
 si_lock = threading.Lock()
 
-
-
 #test
 
-class idecmds():
-    @staticmethod
-    def pull(file):
-        filepath = os.path.join(NFOLDER, file)
-        if os.path.isfile(filepath):
-            idecmds.pullJson_extract(filepath)
-    @staticmethod
-    def pullJson_extract(file):
-        with open(file, 'r') as f:
-            ....
+class idecmds_class():
+    class note:
+        @staticmethod
+        def pull(file, note):
+            try:
+                name = []
+                content = []
+                filepath = os.path.join(NFOLDER, file)
+                if os.path.isfile(filepath):
+                    with open(filepath, 'r') as f:
+                        data = yaml.safe_load(f) or []
+                    for block in data:
+                        name.append(block["name"])
+                        content.append(block["content"])
+                    for i in name:
+                        if i == note:
+                            log('py', 'HJFBDSUFGYKF', 2)
+                            return 1, name, content
+                else:
+                    return 2, 'No such file found'
+                    
+            except Exception as e:
+                log('py', 'HJFBDSUFGYKF', f'HERE: {e}')
+                return 3, e
             
+        @staticmethod
+        def push(file, note, val):
+            try:
+                filepath = os.path.join(NFOLDER, file)
+                if os.path.isfile(filepath):
+                    with open(filepath, 'r') as f:
+                        data = yaml.safe_load(f) or []
+                    new_entry = {
+                        'name': note,
+                        'content': val
+                    }
+                    data.append(new_entry)
+                    with open(filepath, 'w') as f:
+                        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+                    
+                    return 1, ''
+                else:
+                    return 2, ''
+            except Exception as e:
+                return 3, e
+            
+        @staticmethod
+        def clear(file, note):
+            try:
+                filepath = os.path.join(NFOLDER, file)
+                if os.path.isfile(filepath):
+                    with open(filepath, 'r') as f:
+                        data = yaml.safe_load(f) or []
+                    for i, block in enumerate(data):
+                        if block.get("name") == note:
+                            del data[i]
+                            with open(filepath, 'w') as f:
+                                yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+                            return 1, '' 
+                    return 4, ''
+                else:
+                    return 2, ''
+            except Exception as e:
+                return 3, e, ''
+            
+        @staticmethod
+        def delete(file):
+            try:
+                filepath = os.path.join(NFOLDER, file)
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+                    return 1, ''
+                return 2, ''
+            except Exception as e:
+                return 3, e
+        
+        @staticmethod
+        def clearAll(file):
+            try:
+                filepath = os.path.join(NFOLDER, file)
+                if os.path.isfile(filepath):
+                    open(filepath, 'w').close()
+                    return 1, '' 
+                return 2, ''
+            except Exception as e:
+                return 3, e 
+
+    class dict:
+        @staticmethod
+        def pull(file, word):
+            try:
+                filepath = os.path.join(DFOLDER, file)
+                if os.path.isfile(filepath):
+                    with open(filepath, 'r') as f:
+                        data = yaml.safe_load(f) or []
+                    if word in data and data[word]:
+                        return 1, data[word]
+                else:
+                    return 2, ''
+            except Exception as e:
+                return 3, e
+        
+        @staticmethod
+        def push(file, name, disc):
+            try:
+                filepath = os.path.join(DFOLDER, file)
+                if os.path.isfile(filepath):
+                    with open(filepath, 'r') as f:
+                        data = yaml.safe_load(f) or []
+                    data[name] = disc
+                    with open(filepath, 'w') as f:
+                        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+                    return 1, ''
+                return 2, ''
+            except Exception as e:
+                return 3, e
+        
+        @staticmethod
+        def clear(file, word):
+            try:
+                filepath = os.path.join(DFOLDER, file)
+                if os.path.isfile(filepath):
+                    with open(filepath, 'r') as f:
+                        data = yaml.safe_load(f)
+                    if word in data and data[word] != '':
+                        data[word] = ""
+                        with open(filepath, 'w') as f:
+                            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+                        return 1, ''
+                    else:
+                        return 4, ''
+                return 2, ''
+            except Exception as e:
+                return 3, e
+        
+        
+        @staticmethod
+        def clearAll(file):
+            try:
+                filepath = os.path.join(DFOLDER, file)
+                if os.path.isfile(filepath):
+                    open(filepath, 'w').close()
+                    return 1, ''
+                return 2, ''
+            except Exception as e:
+                return 3, e, ''
+        
+        @staticmethod
+        def delete(file):
+            try:
+                filepath = os.path.join(DFOLDER, file)
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+                    return 1, ''
+                return 2, ''
+            except Exception as e:
+                return 3, e
+        
+    class sys:
+        @staticmethod
+        def clossApp():
+            eel.spawn(eel.closewindow())
+            sys.exit()
+  
+
 ## === FUNCTIONS === ##
 
 def open_native_folder_dialog():
@@ -306,7 +459,7 @@ def log(file, info, other, err=False):
     global i
     i = i + 1
     msg = f" ${i} ${file} ${info}  ${other} ${err}"
-    log_file_path = os.path.join(FOLDER, "notes.txt")
+    log_file_path = os.path.join(FOLDER, "notes")
     with open(log_file_path, 'a', encoding='utf-8') as f:
         f.write(msg + "\n")
 
@@ -878,6 +1031,28 @@ def startshell(currentdict):
     log("py", "SHELL", shell)
     run_command(f"cd {currentdict}")
 
+@eel.expose
+def idecmds(inner, method, *args):
+    inner_class = getattr(idecmds_class, inner)
+    method = getattr(inner_class, method)
+    try:
+        a = None
+        b = None
+        result = method(*args)
+        success = result[0]
+        a = result[1] if len(result) > 1 else None
+        b = result[2] if len(result) > 2 else None
+        if success == 1:
+            return {'success': success, 'a': a, 'b': b}
+        elif success == 2:
+            return {'success': success}
+        elif success == 3:
+            return {'success': success, 'e': a}
+        elif success == 4:
+            return {'success': success}
+    except TypeError as e:
+        log('py', 'dywrwm', e)
+        return {"success": 3, 'e': e}
 
 eel.init(WFOLDER)
 eel.start('index.html', size=(1200, 800), port=0)

@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await eel.idecmds('note', 'pull', file, note)(function(msg){
                     if (msg.success === 1){
                         showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
                         showNotification('Fail', `Could not pull note due to ${msg.e}`)
@@ -55,44 +55,46 @@ document.addEventListener('DOMContentLoaded', function() {
             static async push(file, note, val){
                 await eel.idecmds('note', 'push', file, note, val)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'pushed note')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not push note due to ${msg.e}`)
                     }
                 })
             }
             static async clear(file, note){
                 await eel.idecmds('note', 'clear', file, note)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'cleared note')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
+                    } else if (msg.success === 4){
+                        showNotification('Warning', 'No such note file')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not clear note due to ${msg.e}`)
                     }
                 })
             }
             static async clearAll(file){
                 await eel.idecmds('note', 'clearAll', file)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'cleared file')
+                    }  else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not clear file due to ${msg.e}`)
                     }
                 });
             }
             static async delete(file){
                 await eel.idecmds('note', 'delete', file)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'Deleted note')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not delete note due to ${msg.e}`)
                     }
                 })
             }
@@ -102,123 +104,79 @@ document.addEventListener('DOMContentLoaded', function() {
             static copy(file, note) {
                 // ADD COPY
             }
-            static async addProperty(file, note, property, value){
-                await eel.idecmds('note', 'addProperty', file, note, property, value)(function(msg){
-                    if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
-                        showNotification('Warning', 'No such file found')
-                    } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
-                    }
-                })
-            }
-            static async removeProperty(file, note, property){
-                await eel.idecmds('note', 'removeProperty', file, note, property)(function(msg){
-                    if (msg.success === 1) {
-                        showNotification('Success', 'Pulled note')
-                    } else if (msg.success === 2) {
-                        showNotification('Warning', 'No such file found')
-                    } else {
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
-                    }
-                });
-            }
         }
 
 
         static dict= class{
-            static async pull (file, note){
-                await eel.idecmds('dict', 'pull', file, note)(function(msg){
+            static async pull (file, discript){
+                await eel.idecmds('dict', 'pull', file, discript)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'Pulled dictionary')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not pull dictionary due to ${msg.e}`)
                     }
                 })
             }
-            static async push(file, name, note){
-                await eel.idecmds('dict', 'push', file, name, note)(function(msg){
+            static async push(file, name, discription){
+                await eel.idecmds('dict', 'push', file, name, discription)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'Pushed dictionary')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not push dictionary due to ${msg.e}`)
                     }
                 })
             }
-            static async clear(file, note){
-                await eel.idecmds('dict', 'clear', file, note)(function(msg){
+            static async clear(file, word){
+                await eel.idecmds('dict', 'clear', file, word)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'Cleared dictionary')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
+                    } else if (msg.success === 4){
+                        showNotification('Warning', 'No such Keyword found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not clear dictionary due to ${msg.e}`)
                     }
                 })
             }
             static async clearAll(file){
                 await eel.idecmds('dict', 'clearAll', file)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'Cleared dictionary')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not clear dictionary due to ${msg.e}`)
                     }
                 });
             }
             static async delete(file){
                 await eel.idecmds('dict', 'delete', file)(function(msg){
                     if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
+                        showNotification('Success', 'Deleted dictionary')
+                    } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
                     } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
+                        showNotification('Fail', `Could not delete dictionary due to ${msg.e}`)
                     }
                 })
-            }
-            static info(file, note) {
-                // ADD INFO
             }
             static copy(file, note) {
                 // ADD COPY
-            }
-            static async addProperty(file, note, property, value){
-                await eel.idecmds('dict', 'addProperty', file, note, property, value)(function(msg){
-                    if (msg.success === 1){
-                        showNotification('Success', 'Pulled note')
-                    }else if (msg.success === 2){
-                        showNotification('Warning', 'No such file found')
-                    } else{
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
-                    }
-                })
-            }
-            static async removeProperty(file, note, property){
-                await eel.idecmds('dict', 'removeProperty', file, note, property)(function(msg){
-                    if (msg.success === 1) {
-                        showNotification('Success', 'Pulled note')
-                    } else if (msg.success === 2) {
-                        showNotification('Warning', 'No such file found')
-                    } else {
-                        showNotification('Fail', `Could not pull note due to ${msg.e}`)
-                    }
-                });
             }
         }
 
         static sys= class{
             static async closeApp(){
-                await eel.closeApp()
+                await eel.idecmds('sys', 'clossApp')()
+                window.close();
             }
-            static async newFile(){
-                await eel.makeFile(document.getElementById('workspace-name').dataset.path, 'NewNote')(function(msg){
+            static async newFile(name='NewNote'){
+                await eel.makeFile(document.getElementById('workspace-name').dataset.path, name)(function(msg){
                     if (msg.success){
                         showNotification('Success', 'Made new file successfully')
                         loadWorkspace(document.getElementById('workspace-name').dataset.path)
@@ -229,6 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+
+    function closewindow(){
+        window.close()
+    }
+    eel.expose(closewindow)
 
     /* HERE
     CLASS USSAGE MANUEL: (in PSEUDO-dict stucture cuz dict > anything)
@@ -281,9 +244,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.switchTab = function(tabNumber) {
         const tabs = {
-            1: { id: 'main-ide-content', name: 'main-ide' },
-            2: { id: 'notes-content', name: 'notes' },
-            3: { id: 'dictionary-content', name: 'dictionary' },
+            1: { id: 'main-ide-content', name: 'main-ide', 'func': loadEditor},
+            2: { id: 'notes-content', name: 'notes', 'func': loadNotes},
+            3: { id: 'dictionary-content', name: 'dictionary', 'func': loadDict},
             4: { id: 'ports-content', name: 'ports' },
             5: { id: 'circuits-pcb-content', name: 'circuits-pcb' },
             6: { id: 'terminal-content', name: 'terminal' },
@@ -301,6 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const path = workspace.dataset.path;
             eel.startshell(path)();
         }
+        if (tab.func) tab.func();
 
 
         // Hide all tab contents
@@ -926,7 +890,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 window.noteEditor = monaco.editor.create(document.getElementById('note-editor'), {
                     value: '// Notes editor!',
-                    language: 'plaintext',
+                    language: 'yaml',
                     theme: theme,
                     automaticLayout: true,
                     fontSize: fontsize,
@@ -944,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 window.dictEditor = monaco.editor.create(document.getElementById('dictionary-editor'), {
                     value: '// Dictionary editor!',
-                    language: 'plaintext',
+                    language: 'yaml',
                     theme: theme,
                     automaticLayout: true,
                     fontSize: fontsize,
@@ -994,7 +958,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // Convert args string to array
                         const args = JSON.parse(`[${argsString.replace(/'/g, '"')}]`)
-
                         // Call the static method
                         if (idecmd[clsName] && typeof idecmd[clsName][methodName] === "function") {
                             await idecmd[clsName][methodName](...args)
@@ -1007,11 +970,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     editor.trigger('keyboard', 'type', { text: '\n' })
                 });
-
-
-
-
-
 
                 resolve(window.editor); // resolves when the main editor is ready
             });
