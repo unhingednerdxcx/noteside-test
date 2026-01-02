@@ -11,6 +11,7 @@ Dict/
 example-folder/
 future-ideas/
 node_modules/
+.git
 
 # Node files
 package-lock.json
