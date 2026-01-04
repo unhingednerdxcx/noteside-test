@@ -18,3 +18,5 @@ Mianly done by adding a data to the element 'workspace-name'  which tracks which
 ## UI message issues
 Done by changing the paremeters when called the function showNotfication()
 Added logs file <this file>
+# VERSION 1.4
+Added sys.go which ensures the environment set

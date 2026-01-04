@@ -26,7 +26,7 @@
     },
     "app": {
         "Autotime": "3",
-        "Restore": true,
+        "Restore": false,
         "Confirm": false,
         "Update": false,
         "log": "on"
