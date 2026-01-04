@@ -1,14 +1,14 @@
 ## === IMPORTS === ##
+import logging
+logging.basicConfig(level=logging.INFO)
+import os
 import eel
 from pathlib import Path
-import os
 import json
 import subprocess
 import serial.tools.list_ports
 import shutil
 from datetime import datetime
-import tkinter as tk
-from tkinter import filedialog
 import traceback
 import platform
 import base64
@@ -38,14 +38,11 @@ DFOLDER = os.path.join(FOLDER, 'Dict')
 WFOLDER = 'web'
 IFOLDER = os.path.join(WFOLDER, 'img')
 os.makedirs(IFOLDER, exist_ok=True)
-root = tk.Tk()
-root.withdraw()
 status = False
 available = False
 i = 0
 si = 0
 si_lock = threading.Lock()
-
 #test
 
 class idecmds_class():
@@ -227,12 +224,9 @@ def open_native_folder_dialog():
         elif shutil.which("kdialog"):
             result = subprocess.run(['kdialog', '--getexistingdirectory'], capture_output=True, text=True)
         else:
-            # fallback to Tkinter
-            root = tk.Tk()
-            root.withdraw()
-            result_path = filedialog.askdirectory()
-            root.destroy()
-            return result_path if result_path else None
+            # Fallback to console input
+            print("No native dialog available. Please enter folder path:")
+            return input().strip()
 
         if result.returncode == 0:
             return result.stdout.strip()
@@ -240,11 +234,24 @@ def open_native_folder_dialog():
 
     # --- Windows ---
     elif system == "Windows":
-        root = tk.Tk()
-        root.withdraw()
-        result_path = filedialog.askdirectory()
-        root.destroy()
-        return result_path if result_path else None
+        try:
+            # Use PowerShell to show native folder dialog
+            script = '''
+            Add-Type -AssemblyName System.Windows.Forms
+            $folder = New-Object System.Windows.Forms.FolderBrowserDialog
+            $result = $folder.ShowDialog()
+            if ($result -eq "OK") {
+                $folder.SelectedPath
+            }
+            '''
+            result = subprocess.run(['powershell', '-Command', script], capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+            return None
+        except:
+            # Fallback to console input
+            print("Failed to open native dialog. Please enter folder path:")
+            return input().strip()
 
     # --- macOS ---
     elif system == "Darwin":
@@ -254,21 +261,16 @@ def open_native_folder_dialog():
             result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
             if result.returncode == 0:
                 return result.stdout.strip()
+            return None
         except:
-            # fallback to Tkinter
-            root = tk.Tk()
-            root.withdraw()
-            result_path = filedialog.askdirectory()
-            root.destroy()
-            return result_path if result_path else None
+            # Fallback to console input
+            print("Failed to open native dialog. Please enter folder path:")
+            return input().strip()
 
     else:
-        # Unknown system → fallback to Tkinter
-        root = tk.Tk()
-        root.withdraw()
-        result_path = filedialog.askdirectory()
-        root.destroy()
-        return result_path if result_path else None
+        # Unknown system → fallback to console input
+        print("Unknown system. Please enter folder path:")
+        return input().strip()
 
 def open_native_file_dialog():
     system = platform.system()  # 'Linux', 'Windows', 'Darwin' (macOS)
@@ -282,12 +284,9 @@ def open_native_file_dialog():
         elif shutil.which("kdialog"):
             result = subprocess.run(['kdialog', '--getopenfilename'], capture_output=True, text=True)
         else:
-            # fallback to Tkinter
-            root = tk.Tk()
-            root.withdraw()
-            result_path = filedialog.askopenfilename()
-            root.destroy()
-            return result_path if result_path else None
+            # Fallback to console input
+            print("No native dialog available. Please enter file path:")
+            return input().strip()
 
         if result.returncode == 0:
             return result.stdout.strip()
@@ -295,42 +294,49 @@ def open_native_file_dialog():
 
     # --- Windows ---
     elif system == "Windows":
-        root = tk.Tk()
-        root.withdraw()
-        result_path = filedialog.askopenfilename()
-        root.destroy()
-        return result_path if result_path else None
+        try:
+            # Use PowerShell to show native file dialog
+            script = '''
+            Add-Type -AssemblyName System.Windows.Forms
+            $file = New-Object System.Windows.Forms.OpenFileDialog
+            $result = $file.ShowDialog()
+            if ($result -eq "OK") {
+                $file.FileName
+            }
+            '''
+            result = subprocess.run(['powershell', '-Command', script], capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+            return None
+        except:
+            # Fallback to console input
+            print("Failed to open native dialog. Please enter file path:")
+            return input().strip()
 
     # --- macOS ---
     elif system == "Darwin":
         try:
-            # Try using AppleScript for native dialog
+            # AppleScript for native file dialog
             script = 'POSIX path of (choose file)'
             result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
             if result.returncode == 0:
                 return result.stdout.strip()
+            return None
         except:
-            # fallback to Tkinter
-            root = tk.Tk()
-            root.withdraw()
-            result_path = filedialog.askopenfilename()
-            root.destroy()
-            return result_path if result_path else None
+            # Fallback to console input
+            print("Failed to open native dialog. Please enter file path:")
+            return input().strip()
 
     else:
-        # Unknown system → fallback
-        root = tk.Tk()
-        root.withdraw()
-        result_path = filedialog.askopenfilename()
-        root.destroy()
-        return result_path if result_path else None
+        # Unknown system → fallback to console input
+        print("Unknown system. Please enter file path:")
+        return input().strip()
 
 def open_native_pic_file_dialog():
     system = platform.system()  # 'Linux', 'Windows', 'Darwin' (macOS)
 
     # --- Allowed extensions ---
     allowed_extensions = "*.jpeg *.jpg *.png *.bmp *.svg *.webp *.tiff *.tif"
-    file_types = [("Image files", allowed_extensions)]
 
     # --- Linux ---
     if system == "Linux":
@@ -347,12 +353,9 @@ def open_native_pic_file_dialog():
                 capture_output=True, text=True
             )
         else:
-            # fallback to Tkinter
-            root = tk.Tk()
-            root.withdraw()
-            result_path = filedialog.askopenfilename(filetypes=file_types)
-            root.destroy()
-            return result_path if result_path else None
+            # Fallback to console input
+            print(f"No native dialog available. Please enter image file path ({allowed_extensions}):")
+            return input().strip()
 
         if result.returncode == 0:
             return result.stdout.strip()
@@ -360,39 +363,49 @@ def open_native_pic_file_dialog():
 
     # --- Windows ---
     elif system == "Windows":
-        root = tk.Tk()
-        root.withdraw()
-        result_path = filedialog.askopenfilename(filetypes=file_types)
-        root.destroy()
-        return result_path if result_path else None
+        try:
+            # Use PowerShell to show native file dialog with filter
+            script = f'''
+            Add-Type -AssemblyName System.Windows.Forms
+            $file = New-Object System.Windows.Forms.OpenFileDialog
+            $file.Filter = "Image files|{allowed_extensions}|All files|*.*"
+            $result = $file.ShowDialog()
+            if ($result -eq "OK") {{
+                $file.FileName
+            }}
+            '''
+            result = subprocess.run(['powershell', '-Command', script], capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+            return None
+        except:
+            # Fallback to console input
+            print(f"Failed to open native dialog. Please enter image file path ({allowed_extensions}):")
+            return input().strip()
 
     # --- macOS ---
     elif system == "Darwin":
         try:
-            # AppleScript with filter not supported natively; filter manually after selection
+            # AppleScript for native file dialog
             script = 'POSIX path of (choose file)'
             result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
             if result.returncode == 0:
                 path = result.stdout.strip()
                 if path.lower().endswith(('.jpeg', '.jpg', '.png', '.bmp', '.svg', '.webp', '.tiff', '.tif')):
                     return path
-                return None
+                else:
+                    print(f"Selected file is not a supported image format ({allowed_extensions})")
+                    return None
+            return None
         except:
-            # fallback to Tkinter
-            root = tk.Tk()
-            root.withdraw()
-            result_path = filedialog.askopenfilename(filetypes=file_types)
-            root.destroy()
-            return result_path if result_path else None
+            # Fallback to console input
+            print(f"Failed to open native dialog. Please enter image file path ({allowed_extensions}):")
+            return input().strip()
 
     else:
-        # Unknown system → fallback
-        root = tk.Tk()
-        root.withdraw()
-        result_path = filedialog.askopenfilename(filetypes=file_types)
-        root.destroy()
-        return result_path if result_path else None
-
+        # Unknown system → fallback to console input
+        print(f"Unknown system. Please enter image file path ({allowed_extensions}):")
+        return input().strip()
 
 def open_native_file_ports_dialog(multiple=False):
     """
@@ -431,19 +444,123 @@ def open_native_file_ports_dialog(multiple=False):
                 files = result.stdout.strip()
                 return files.split('\n') if multiple else files
             return None
+        else:
+            # Fallback to console input
+            if multiple:
+                print("No native dialog available. Please enter file paths (one per line, empty line to finish):")
+                paths = []
+                while True:
+                    path = input().strip()
+                    if not path:
+                        break
+                    paths.append(path)
+                return paths if paths else None
+            else:
+                print("No native dialog available. Please enter file path:")
+                return input().strip()
 
-    # --- Windows & macOS fallback (Tkinter) ---
-    root = tk.Tk()
-    root.withdraw()
-    if multiple:
-        result = filedialog.askopenfilenames()
-        root.destroy()
-        return list(result) if result else None
+    # --- Windows ---
+    elif system == "Windows":
+        try:
+            if multiple:
+                # Use PowerShell to show native file dialog with multiple selection
+                script = '''
+                Add-Type -AssemblyName System.Windows.Forms
+                $file = New-Object System.Windows.Forms.OpenFileDialog
+                $file.Multiselect = $true
+                $result = $file.ShowDialog()
+                if ($result -eq "OK") {
+                    $file.FileNames -join "`n"
+                }
+                '''
+                result = subprocess.run(['powershell', '-Command', script], capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip().split('\n')
+                return None
+            else:
+                # Use PowerShell to show native file dialog
+                script = '''
+                Add-Type -AssemblyName System.Windows.Forms
+                $file = New-Object System.Windows.Forms.OpenFileDialog
+                $result = $file.ShowDialog()
+                if ($result -eq "OK") {
+                    $file.FileName
+                }
+                '''
+                result = subprocess.run(['powershell', '-Command', script], capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+                return None
+        except:
+            # Fallback to console input
+            if multiple:
+                print("Failed to open native dialog. Please enter file paths (one per line, empty line to finish):")
+                paths = []
+                while True:
+                    path = input().strip()
+                    if not path:
+                        break
+                    paths.append(path)
+                return paths if paths else None
+            else:
+                print("Failed to open native dialog. Please enter file path:")
+                return input().strip()
+
+    # --- macOS ---
+    elif system == "Darwin":
+        try:
+            if multiple:
+                # AppleScript for multiple file selection
+                script = '''
+                set selectedFiles to choose file with multiple selections allowed
+                set posixPaths to {}
+                repeat with aFile in selectedFiles
+                    set end of posixPaths to POSIX path of aFile
+                end repeat
+                return posixPaths as string
+                '''
+                result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+                if result.returncode == 0:
+                    # Parse the result to get individual file paths
+                    files_str = result.stdout.strip()
+                    return files_str.split(', ') if files_str else None
+                return None
+            else:
+                # AppleScript for single file selection
+                script = 'POSIX path of (choose file)'
+                result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+                if result.returncode == 0:
+                    return result.stdout.strip()
+                return None
+        except:
+            # Fallback to console input
+            if multiple:
+                print("Failed to open native dialog. Please enter file paths (one per line, empty line to finish):")
+                paths = []
+                while True:
+                    path = input().strip()
+                    if not path:
+                        break
+                    paths.append(path)
+                return paths if paths else None
+            else:
+                print("Failed to open native dialog. Please enter file path:")
+                return input().strip()
+
     else:
-        result = filedialog.askopenfilename()
-        root.destroy()
-        return result if result else None
-
+        # Unknown system → fallback to console input
+        if multiple:
+            print("Unknown system. Please enter file paths (one per line, empty line to finish):")
+            paths = []
+            while True:
+                path = input().strip()
+                if not path:
+                    break
+                paths.append(path)
+            return paths if paths else None
+        else:
+            print("Unknown system. Please enter file path:")
+            return input().strip()
 
 
 ## === EXPOSED FUNCTIONS === ##
@@ -1056,5 +1173,4 @@ def idecmds(inner, method, *args):
 
 eel.init(WFOLDER)
 eel.start('index.html', size=(1200, 800), port=0)
-
 

@@ -1,3 +1,12 @@
 {
-    "LastWorkspace": "/home/nonedude/Downloads/Test"
+  "LastWorkspace": "",
+  "browser": {
+    "exec": "",
+    "name": ""
+  },
+  "os": {
+    "name": "",
+    "packageManager": "",
+    "type": ""
+  }
 }
