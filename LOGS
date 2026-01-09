@@ -26,3 +26,5 @@ This version will NOT have the compiled version, wait for the next version or co
 ```bash
 go run <osname>.go
 ```
+## PATCH 1.5.1
+Fixed the no data folder found bug
