@@ -31,3 +31,6 @@ Fixed the no data folder found bug
 
 ## PATCH 1.5.2
 Fixing path issues on all OS and dependency issues on windows
+
+## PATCH 1.5.3
+Added Windows support and tested for windows. Next partch will target macOS or Linux
