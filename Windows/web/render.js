@@ -37,13 +37,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const contextCopyProductTerminal = document.getElementById('ctx-cp-t');
     const contextCopyTerminal = document.getElementById('ctx-copy-t');
     const contextClearTerminal = document.getElementById('ctx-clear-t');
+    let selectedItem = -1;
 
     window.idecmd =  class{
         static note= class{
             static async pull (file, note){
-                showNotification('test', 'success')
                 await eel.idecmds('note', 'pull', file, note)(function(msg){
                     if (msg.success === 1){
+                        const model = editor.getModel();
+                        const position = editor.getPosition();
+                        const lineNumber = position.lineNumber - 1;
+
+                        const range = new monaco.Range(
+                        lineNumber,
+                        1,
+                        lineNumber,
+                        model.getLineMaxColumn(lineNumber)
+                        );
+
+                        console.log('Pulling note:', String(msg.b));  // DEBUG LOG
+
+                        model.pushEditOperations([], [
+                        { range, text: String(msg.b) }
+                        ], () => null);
                         showNotification('Success', 'Pulled note')
                     } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
@@ -105,9 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         static dict= class{
-            static async pull (file, discript){
-                await eel.idecmds('dict', 'pull', file, discript)(function(msg){
+            static async pull (file){
+                await eel.idecmds('dict', 'pull', file)(async function(msg){
                     if (msg.success === 1){
+                        await dictListDisplay(msg.a)
                         showNotification('Success', 'Pulled dictionary')
                     } else if (msg.success === 2){
                         showNotification('Warning', 'No such file found')
@@ -182,10 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             }
-
-            static async test(){
-                showNotification('Info', 'Test function called')
-            }
         }
     }
 
@@ -234,6 +247,101 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Fail', `Could not clear notification due to ${e}`)
         }
     });
+
+    function togglePopup() {
+        document.getElementById('dictionary-popup').classList.toggle('active');
+        document.getElementById('popup-overlay').classList.toggle('active');
+        const searchInput = document.getElementById('popup-search');
+        if (document.getElementById('dictionary-popup').classList.contains('active')) searchInput.focus();
+    }
+
+
+
+    async function dictListDisplay(data) {
+        const popupList = document.getElementById("popup-list");
+        const searchInput = document.getElementById('popup-search');
+        popupList.innerHTML = ""; // clear previous items
+
+        // Create list items
+        Object.entries(data).forEach(([key, value]) => {
+            const li = document.createElement('li');
+            li.dataset.name = key;
+
+            const titleDiv = document.createElement("div");
+            titleDiv.className = "popup-title";
+
+            const icon = document.createElement("i");
+            icon.className = "fas fa-pen";
+            titleDiv.appendChild(icon);
+            titleDiv.appendChild(document.createTextNode(` ${key}`));
+
+            const span = document.createElement("span");
+            titleDiv.appendChild(span);
+
+            const descDiv = document.createElement("div");
+            descDiv.className = "popup-description";
+            descDiv.textContent = value;
+
+            li.addEventListener('click', () => {
+                const model = editor.getModel();
+                const position = editor.getPosition();
+
+                const lineNumber = position.lineNumber -1;
+                const lineContent = model.getLineContent(lineNumber);
+
+                // replace the whole line
+                model.pushEditOperations(
+                    [],
+                    [{
+                        range: new monaco.Range(
+                            lineNumber,
+                            1,
+                            lineNumber,
+                            lineContent.length + 1
+                        ),
+                        text: li.dataset.name
+                    }],
+                    () => null
+                );
+                togglePopup();
+            });
+
+            li.appendChild(titleDiv);
+            li.appendChild(descDiv);
+            popupList.appendChild(li);
+        });
+
+        const listItems = Array.from(document.querySelectorAll('#popup-list li'));
+
+
+
+        // Keyboard navigation (attach once)
+        searchInput.onkeydown = (e) => {
+            const visibleItems = listItems.filter(i => i.style.display !== 'none');
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedItem = (selectedItem + 1) % visibleItems.length;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedItem = selectedItem <= 0 ? visibleItems.length - 1 : selectedItem - 1;
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedItem >= 0) visibleItems[selectedItem].click();
+            }
+
+            // Update selected class
+            listItems.forEach(i => i.classList.remove('selected'));
+            if (selectedItem >= 0 && selectedItem < visibleItems.length) {
+                visibleItems[selectedItem].classList.add('selected');
+            }
+        };
+
+        togglePopup();
+    }
+
+
+
 
 
 
@@ -330,6 +438,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (!contextMenuTerminal.contains(e.target)) {
             contextMenuTerminal.style.display = "none";
+        }
+        if (document.getElementById('dictionary-popup').classList.contains('active') && !document.getElementById('dictionary-popup').contains(e.target)) {
+            togglePopup();
         }
         /*
         e.preventDefault();
@@ -962,7 +1073,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Fail', `Could not run function due to ${e}`);
         }
 
-        editor.trigger('keyboard', 'type', { text: '\n' })
     }
 
 
@@ -1050,7 +1160,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             noteEditor.trigger('keyboard', 'type', { text: '\n' });
                             return;
                         }
-                        console.log("Note Editor Command Executed");
                         noteEditor.trigger('keyboard', 'type', { text: '\n' });
                     }, 10);
                 }
@@ -1070,14 +1179,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         dictEditor.trigger('keyboard', 'type', { text: '\n' });
                     }, 10);
                 }
-
-                // Attach the unique, separate handlers
-                // Attach handlers to DIFFERENT keys to prove they work
                
                 noteEditor.addCommand(monaco.KeyCode.Enter, handleNoteEditorEnter);
                 dictEditor.addCommand(monaco.KeyCode.Enter, handleDictEditorEnter);
 
-                // Add listeners to STOP the event from bubbling out of each editor
                 editor.onKeyDown(e => {
                     if (e.keyCode === monaco.KeyCode.Enter) {
                         e.stopPropagation();
@@ -1090,7 +1195,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         idecmdhandeler(lineText);
                         console.log("Main Editor Command Executed");
-                        editor.trigger('keyboard', 'type', { text: '\n' });
                     }
                 });
 

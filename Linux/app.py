@@ -72,7 +72,6 @@ class idecmds_class():
                         content.append(block["content"])
                     for i in name:
                         if i == note:
-                            log('py', 'HJFBDSUFGYKF', 2)
                             return 1, name, content
                 else:
                     return 2, 'No such file found'
@@ -145,14 +144,13 @@ class idecmds_class():
 
     class dict:
         @staticmethod
-        def pull(file, word):
+        def pull(file):
             try:
                 filepath = os.path.join(DFOLDER, file)
                 if os.path.isfile(filepath):
                     with open(filepath, 'r') as f:
-                        data = yaml.safe_load(f) or []
-                    if word in data and data[word]:
-                        return 1, data[word]
+                        data = yaml.safe_load(f) or {}
+                    return 1, data
                 else:
                     return 2, ''
             except Exception as e:
@@ -164,7 +162,7 @@ class idecmds_class():
                 filepath = os.path.join(DFOLDER, file)
                 if os.path.isfile(filepath):
                     with open(filepath, 'r') as f:
-                        data = yaml.safe_load(f) or []
+                        data = yaml.safe_load(f) or {}
                     data[name] = disc
                     with open(filepath, 'w') as f:
                         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
@@ -1179,6 +1177,6 @@ def idecmds(inner, method, *args):
         return {"success": 3, 'e': e}
 
 eel.init(WFOLDER)
-eel.start('index.html', size=(1200, 800), port=0, mode="fiefox")
+eel.start('index.html', size=(1200, 800), port=0, mode="chrome")
 
 

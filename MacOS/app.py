@@ -72,7 +72,6 @@ class idecmds_class():
                         content.append(block["content"])
                     for i in name:
                         if i == note:
-                            log('py', 'HJFBDSUFGYKF', 2)
                             return 1, name, content
                 else:
                     return 2, 'No such file found'
@@ -172,7 +171,7 @@ class idecmds_class():
                 return 2, ''
             except Exception as e:
                 return 3, e
-        
+            
         @staticmethod
         def clear(file, word):
             try:
@@ -781,7 +780,7 @@ def newNote(fileName):
         with open(file_path, 'w') as f:
             f.write(
                 f"Write anything here then copy it to your many project (anytime, anywhere) "
-                f"by writing\n notes.bring('{fileName}')"
+                f"by writing\nidecmd.note.pull('{fileName}')"
             )
         return {"success": True}
     except Exception as e:

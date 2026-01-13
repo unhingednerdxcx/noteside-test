@@ -906,16 +906,26 @@
 
 
     <!-- Dictionary Popup -->
+   <div class="popup-overlay" id="popup-overlay"></div>
+
     <div class="dictionary-popup" id="dictionary-popup">
         <div class="popup-header">
-            <input type="text" class="popup-search" id="popup-search" placeholder="Search commands...">
-            <button class="popup-close" id="popup-close">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="popup-search-container">
+                <i class="fas fa-search popup-search-icon"></i>
+                <input type="text" class="popup-search" id="popup-search" placeholder="Search commands...">
+            </div>
         </div>
         <div class="popup-content">
             <ul class="popup-list" id="popup-list">
-                <!-- Dictionary entries will be populated here -->
+                <!--
+                <li>
+                    <div class="popup-title">
+                        <i class="fa-regular fa-pen"></i> xx
+                        <span class="popup-tag">xx</span>
+                    </div>
+                    <div class="popup-description">xx</div>
+                </li>
+                --->
             </ul>
         </div>
     </div>

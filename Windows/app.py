@@ -71,7 +71,6 @@ class idecmds_class():
                     return 2, 'No such file found'
                     
             except Exception as e:
-                log('py', 'HJFBDSUFGYKF', f'HERE: {e}')
                 return 3, e
             
         @staticmethod
@@ -134,18 +133,17 @@ class idecmds_class():
                     return 1, '' 
                 return 2, ''
             except Exception as e:
+       
                 return 3, e 
-
     class dict:
         @staticmethod
-        def pull(file, word):
+        def pull(file):
             try:
                 filepath = os.path.join(DFOLDER, file)
                 if os.path.isfile(filepath):
                     with open(filepath, 'r') as f:
-                        data = yaml.safe_load(f) or []
-                    if word in data and data[word]:
-                        return 1, data[word]
+                        data = yaml.safe_load(f) or {}
+                    return 1, data
                 else:
                     return 2, ''
             except Exception as e:
@@ -157,7 +155,7 @@ class idecmds_class():
                 filepath = os.path.join(DFOLDER, file)
                 if os.path.isfile(filepath):
                     with open(filepath, 'r') as f:
-                        data = yaml.safe_load(f) or []
+                        data = yaml.safe_load(f) or {}
                     data[name] = disc
                     with open(filepath, 'w') as f:
                         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
