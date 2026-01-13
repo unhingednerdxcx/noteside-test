@@ -355,11 +355,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const tabs = {
             1: { id: 'main-ide-content', name: 'main-ide', 'func': loadEditor},
             2: { id: 'notes-content', name: 'notes', 'func': loadNotes},
-            3: { id: 'dictionary-content', name: 'dictionary', 'func': loadDict},
-            4: { id: 'ports-content', name: 'ports' },
-            5: { id: 'circuits-pcb-content', name: 'circuits-pcb' },
-            6: { id: 'terminal-content', name: 'terminal' },
-            7: { id: 'settings-content', name: 'settings' }
+            3: { id: 'dictionary-content', name: 'dictionary', 'func': loadDict},/*
+            4: { id: 'ports-content', name: 'ports' }, */
+            4: { id: 'circuits-pcb-content', name: 'circuits-pcb' },
+            5: { id: 'terminal-content', name: 'terminal' },
+            6: { id: 'settings-content', name: 'settings' }
         };
 
         const tab = tabs[tabNumber];
@@ -377,15 +377,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         switch (tabNumber){
             case 4:
-                workspace.dataset.tab = "port";
-                break;
-            case 5:
                 workspace.dataset.tab = "circuit";
                 break;
-            case 6:
+            case 5:
                 workspace.dataset.tab = "terminal";
                 break;
-            case 7:
+            case 6:
                 workspace.dataset.tab = "settings";
                 break;
             default:
@@ -689,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-
+/*
     document.getElementById('port-select-btn').addEventListener('click', function() {
         const portFileBtn = this;
         eel.openUploadFile()(function(msg){
@@ -719,6 +716,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.dataset.checked = isChecked ? "True" : "False";
         log("verify-upload", isChecked);
     });
+    */
 
 
     contextOpen.addEventListener('click', function() {
@@ -1013,7 +1011,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (await eel.jsonmanager('g', 'app', 'Restore')() === true){
             document.querySelector('.app-container').style.display = 'block';
             path = await eel.getLastWorkspace()();
-            log('Restor', path);
+            log("PATH", !path)
+            if (!path) {
+                eel.jsonmanager('s', 'app', 'Restore', false)();
+                idecmd.sys.closeApp();
+            }
             document.getElementById('workspace-name').textContent = path.split('/').pop() || path.split('\\').pop();
             document.getElementById('workspace-name').dataset.path = path;
 
@@ -1714,7 +1716,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // == Ports == //
-
+/*
     window.loadPorts = function() {
         const selectionPort = document.getElementById('serial-port-select');
         eel.getPorts()(function(msg){
@@ -1750,6 +1752,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pTerminal.scrollTop = pTerminal.scrollHeight;
     }
     eel.expose(Out)
+    */
 
 
 

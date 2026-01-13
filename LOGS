@@ -50,3 +50,6 @@ Fixed some minor issues for macOS to do this i added run.sh setup.sh
 
 # VERSION 1.6 -QUICK FIRE UPDATES-
 1st fire:- fixed major bugs in application revolving arround pulling notes and viewing dictionarys.
+
+# VERSION 1.6.2 -QUICK FIRE UPDATES-
+2nd fire:- fixed major bugs in application revolving arround restoring last workspace on app load and closed ports tab (under development)
