@@ -1,0 +1,25 @@
+import os
+import subprocess
+import sys
+
+APP_NAME = "NotesIDE"
+INSTALL_DIR = os.path.dirname(sys.executable)
+START_MENU = os.path.join(
+    os.environ["APPDATA"],
+    "Microsoft",
+    "Windows",
+    "Start Menu",
+    "Programs"
+)
+
+shortcut = os.path.join(START_MENU, f"{APP_NAME}.lnk")
+target = os.path.join(INSTALL_DIR, "NotesIDE.exe")
+
+ps = f'''
+$WshShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut("{shortcut}")
+$Shortcut.TargetPath = "{target}"
+$Shortcut.Save()
+'''
+
+subprocess.run(["powershell", "-Command", ps], check=True)

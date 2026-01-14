@@ -15,6 +15,7 @@ Linux/.venv
 MacOS/.venv
 Windows/.venv
 BUILD/
+Appmakethingy/
 
 # Node files
 package-lock.json
