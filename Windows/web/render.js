@@ -1406,6 +1406,32 @@ document.addEventListener('DOMContentLoaded', function() {
             li.dataset.name = object.name;
             li.dataset.type = object.type;
             li.dataset.expanded = object.expanded || false;
+            li.draggable = true;
+
+            li.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData("text/plain", object.path);
+                console.log("Dragging started for:", object.path);
+            });
+
+            li.addEventListener('dragover', function(e) {
+                e.preventDefault(); 
+            });
+
+            li.addEventListener('drop', function(e) {
+                e.preventDefault();
+                
+
+                const draggedPath = e.dataTransfer.getData("text/plain");
+                const targetLi = e.target.closest('.file-tree-item');
+                
+                if (targetLi) {
+                    const targetPath = targetLi.dataset.path;
+                    
+                    console.log("Dragged item:", draggedPath);
+                    console.log("Dropped on:", targetPath);
+                    
+                }
+            });
 
             // Create a container for the folder/file icon and name
             const itemContainer = document.createElement('div');
