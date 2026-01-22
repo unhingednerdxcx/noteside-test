@@ -1,11 +1,3 @@
-/*
-document.getElementById('btn').addEventListener('click', function() {
-    // brn
-});
-*/
-
-
-
 document.addEventListener('DOMContentLoaded', function() {
     let zoomRate = 1;
     const modal = document.getElementById('modal');
@@ -56,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         model.getLineMaxColumn(lineNumber)
                         );
 
-                        log('Pulling note:', String(msg.b));  // DEBUG LOG
 
                         model.pushEditOperations([], [
                         { range, text: String(msg.b) }
@@ -126,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             const lineNumber = position.lineNumber -1;
                             const lineContent = model.getLineContent(lineNumber);
 
-                            // replace the whole line
                             model.pushEditOperations(
                                 [],
                                 [{
@@ -271,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadFileTree(path) {
         eel.listFiles(path)(function(msg) {
             if (msg.success) {
-                // If we have a current tree, preserve expanded states
                 if (currentFileTree) {
                     preserveExpandedStates(currentFileTree, msg.files);
                 }
@@ -282,7 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function preserveExpandedStates(oldTree, newTree) {
-        // Create a map of paths to expanded states from the old tree
         const expandedStates = {};
         
         function collectStates(nodes) {
@@ -387,7 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-        // Keyboard navigation (attach once)
         searchInput.onkeydown = (e) => {
             const visibleItems = listItems.filter(i => i.style.display !== 'none');
 
@@ -1118,33 +1105,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const clsName = match[1];    // e.g., "note"
-            const methodName = match[2]; // e.g., "pull"
-            const argsString = match[3]; // e.g., "'file','note'"
+            const clsName = match[1];    
+            const methodName = match[2]; 
+            const argsString = match[3]; 
 
             // Safer argument parsing
             let args;
             try {
-                // Try to parse directly first
                 args = JSON.parse(`[${argsString}]`);
             } catch (e) {
-                // If it fails, try replacing single quotes with double quotes
                 args = JSON.parse(`[${argsString.replace(/'/g, '"')}]`);
             }
 
-            // Check if the class exists
             if (!idecmd[clsName]) {
                 showNotification('Fail', `Class not found: ${clsName}`);
                 return;
             }
             
-            // Check if the method exists
             if (typeof idecmd[clsName][methodName] !== "function") {
                 showNotification('Fail', `Method not found: ${clsName}.${methodName}`);
                 return;
             }
 
-            // Call the method and add logging
             log(`Executing: idecmd.${clsName}.${methodName}(${args.join(', ')})`);
             await idecmd[clsName][methodName](...args);
             
@@ -1229,7 +1211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     cursorBlinking: blink,
                 });
 
-                // Handler for the note editor
+            
                 function handleNoteEditorEnter() {
                     noteEditor.focus();
                     setTimeout(() => {
@@ -1244,7 +1226,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 10);
                 }
 
-                // Handler for the dictionary editor
                 function handleDictEditorEnter() {
                     dictEditor.focus();
                     setTimeout(() => {
@@ -1494,7 +1475,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (object.type === 'folder') {
                 icon.className = 'fas fa-folder folder-icon';
             } else {
-                // Then get the specific icon asynchronously
                 eel.fileInfo(object.path)(function(msg) {
                     if (msg && msg.ico) {
                         icon.className = msg.ico;
@@ -1510,52 +1490,52 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.style.marginRight = '8px';
             li.appendChild(itemContainer);
 
-                if (object.type === 'folder' && object.children && object.children.length > 0) {
-                    const childrenContainer = document.createElement('ul')
-                    childrenContainer.className = 'file-tree-children'
-                    childrenContainer.style.display = object.expanded ? 'block' : 'none'
-                    li.appendChild(childrenContainer)
-                    
-                    itemContainer.addEventListener('click', function(e) {
-                        e.stopPropagation()
-                        toggleFolder(li, object)
-                    })
-                    
-                    if (object.expanded) {
-                        populateFiles(object.children, childrenContainer)
-                    }
-                } else if (object.type === 'folder') {
-                    itemContainer.addEventListener('click', function(e) {
-                        e.stopPropagation()
-                        toggleFolder(li, object)
-                    })
+            if (object.type === 'folder' && object.children && object.children.length > 0) {
+                const childrenContainer = document.createElement('ul');
+                childrenContainer.className = 'file-tree-children';
+                childrenContainer.style.display = object.expanded ? 'block' : 'none';
+                li.appendChild(childrenContainer);
+                
+                itemContainer.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleFolder(li, object);
+                });
+                
+                if (object.expanded) {
+                    populateFiles(object.children, childrenContainer);
                 }
+            } else if (object.type === 'folder') {
+                itemContainer.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleFolder(li, object);
+                });
+            }
 
-                if (object.type === 'file') {
-                    itemContainer.addEventListener('click', function(e) {
-                        e.stopPropagation()
-                        openFile(object.path, object.name)
-                        workspace = document.getElementById('workspace-name')
-                        workspace.dataset.filename = object.name
-                        workspace.dataset.path = object.path
-                    })
-                }
+            if (object.type === 'file') {
+                itemContainer.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openFile(object.path, object.name);
+                    workspace = document.getElementById('workspace-name');
+                    workspace.dataset.filename = object.name;
+                    workspace.dataset.path = object.path;
+                });
+            }
 
-                itemContainer.addEventListener('contextmenu', function(e) {
-                    e.preventDefault()
-                    e.stopPropagation()
+            itemContainer.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-                    contextMenu.style.display = "block"
-                    contextMenu.style.left = `${e.pageX}px`
-                    contextMenu.style.top = `${e.pageY}px`
+                contextMenu.style.display = "block";
+                contextMenu.style.left = `${e.pageX}px`;
+                contextMenu.style.top = `${e.pageY}px`;
 
-                    contextMenu.dataset.path = object.path
-                    contextMenu.dataset.name = object.name
-                    contextMenu.dataset.type = object.type
-                })
+                contextMenu.dataset.path = object.path;
+                contextMenu.dataset.name = object.name;
+                contextMenu.dataset.type = object.type;
+            });
 
-                fileTree.appendChild(li)
-            })
+            fileTree.appendChild(li);
+        });
     }
 
     function toggleFolder(folderElement, folderObject) {
@@ -1563,7 +1543,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const expandIcon = folderElement.querySelector('.expand-icon');
         const folderIcon = folderElement.querySelector('.folder-icon');
         
-        // Find the children container or create it if it doesn't exist
         let childrenContainer = folderElement.querySelector('.file-tree-children');
         if (!childrenContainer) {
             childrenContainer = document.createElement('ul');
@@ -1577,20 +1556,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!isExpanded) { // EXPANDING
             
-            // Update icons
+            
             if (expandIcon) expandIcon.className = 'fas fa-chevron-down expand-icon';
             if (folderIcon) folderIcon.className = 'fas fa-folder-open folder-icon';
             
-            // Show the container
+        
             childrenContainer.style.display = 'block';
 
             if (!folderObject.children || folderObject.children.length === 0) {
-                // Fetch the contents of this folder from the backend
                 eel.listFiles(folderObject.path)(function(msg) {
                     if (msg.success) {
-                        // Store the children in our data object
                         folderObject.children = msg.files;
-                        // Populate the DOM with the new children
                         populateFiles(folderObject.children, childrenContainer);
                     } else {
                         showNotification('Error', `Could not load folder contents: ${msg.message}`);
@@ -1604,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (expandIcon) expandIcon.className = 'fas fa-chevron-right expand-icon';
             if (folderIcon) folderIcon.className = 'fas fa-folder folder-icon';
             
-            // Hide the container
+
             childrenContainer.style.display = 'none';
         }
     }
@@ -1612,7 +1588,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function openFile(path, name){
         eel.readFile(path, name)(function(msg){
             if (msg.success){
-                // Wait until the editor is ready, then set its content
                 window.editorReady.then(() => {
                     editor.setValue(msg.content);
                     const model = editor.getModel();
@@ -1668,22 +1643,18 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             fileTabs.removeChild(tab);
             
-            // If this was the active tab, activate another one
             if (fileTabs.children.length > 0) {
                 fileTabs.children[0].classList.add('active');
-                // Load the file for the new active tab
                 const newPath = fileTabs.children[0].dataset.path;
                 const newName = fileTabs.children[0].querySelector('span').textContent;
                 openFile(newPath, newName);
             } else {
-                // No tabs left, clear editor
                 editor.setValue('');
                 document.getElementById('current-file-name').textContent = 'Untitled';
                 document.getElementById('current-file-name').removeAttribute('data-path');
             }
         });
         
-        // Add click to activate tab
         tab.addEventListener('click', function() {
             document.querySelectorAll('.file-tab').forEach(t => 
                 t.classList.remove('active')

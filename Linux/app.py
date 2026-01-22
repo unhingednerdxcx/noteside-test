@@ -53,7 +53,6 @@ available = False
 i = 0
 si = 0
 si_lock = threading.Lock()
-#test
 
 class idecmds_class():
     class note:
@@ -1153,7 +1152,6 @@ def getPorts():
 
     for port in ports:
         try:
-            # Try to open and immediately close the port
             s = serial.Serial(port.device)
             s.close()
             active_ports.append(port.device)
@@ -1325,26 +1323,87 @@ def GetCmdForFile(filename):
     parts = filename.split('.')
     cmd = None
     match parts[-1]:
-        case "py":
+        case "py" | "pyw":
             cmd = f"python3 {filename}"
-        case "js":
+        case "js" | "mjs" | "cjs":
             cmd = f"node {filename}"
-        case "ts":
+        case "ts" | "mts" | "cts":
             cmd = f"ts-node {filename}"
+        case "jsx":
+            cmd = f"echo 'JSX files need a bundler like Vite/React to run'"
+        case "tsx":
+            cmd = f"echo 'TSX files need a bundler like Vite/React to run'"
         case "java":
             cmd = f"javac {filename} && java {filenameTrue}"
         case "c":
             cmd = f"gcc {filename} -o {filenameTrue} && ./{filenameTrue}"
-        case "cpp" | "cc" | "cxx":
-            cmd = f"gcc {filename} -o {filenameTrue} && ./{filenameTrue}"
-        case "html" | "htm":
-            language = "html"
-        case "rs":
-            cmd = f"rustc {filename} -o {filenameTrue} && ./{filenameTrue}"
+        case "cpp" | "cc" | "cxx" | "hpp" | "hh" | "hxx":
+            cmd = f"g++ {filename} -o {filenameTrue} && ./{filenameTrue}"
+        case "cs":
+            cmd = f"csc {filename} && ./{filenameTrue}"  # OS
         case "go":
             cmd = f"go run {filename}"
-        case "bash":
+        case "rs":
+            cmd = f"rustc {filename} -o {filenameTrue} && ./{filenameTrue}"
+        case "kt" | "kts":
+            cmd = f"kotlinc {filename} -include-runtime -d {filenameTrue}.jar && java -jar {filenameTrue}.jar"
+        case "swift":
+            cmd = f"swift {filename}"
+        case "rb":
+            cmd = f"ruby {filename}"
+        case "php":
+            cmd = f"php {filename}"
+        case "pl" | "pm":
+            cmd = f"perl {filename}"
+        case "sh" | "bash" | "zsh" | "ksh":
             cmd = f"bash {filename}"
+        case "ps1":
+            cmd = f"pwsh {filename}"
+        case "bat":
+            cmd = f"echo 'Cannot run .bat natively on Linux; use Wine or Windows'"
+        case "html" | "htm":
+            cmd = f"echo 'Open {filename} in a browser'"
+        case "css" | "scss" | "sass" | "less":
+            cmd = f"echo 'Stylesheets cannot be run'"
+        case "json" | "xml" | "yaml" | "yml" | "md" | "markdown" | "mkd" | "mdown" | "ini" | "toml" | "conf" | "txt" | "log":
+            cmd = f"echo 'File is data/document; cannot be executed'"
+        case "vue" | "svelte":
+            cmd = f"echo '{filename} needs a JS bundler to run'"
+        case "r":
+            cmd = f"Rscript {filename}"
+        case "lua":
+            cmd = f"lua {filename}"
+        case "dart":
+            cmd = f"dart run {filename}"
+        case "elm":
+            cmd = f"elm make {filename} --output={filenameTrue}.js && node {filenameTrue}.js"
+        case "hs":
+            cmd = f"runhaskell {filename}"
+        case "erl" | "hrl":
+            cmd = f"erl -noshell -s {filenameTrue} start -s init stop"
+        case "ex" | "exs":
+            cmd = f"elixir {filename}"
+        case "clj" | "cljs":
+            cmd = f"clj {filename}"
+        case "f" | "f90" | "f95":
+            cmd = f"gfortran {filename} -o {filenameTrue} && ./{filenameTrue}"
+        case "fs" | "fsi":
+            cmd = f"fsharpc {filename} -o {filenameTrue} && ./{filenameTrue}"
+        case "ada":
+            cmd = f"gnatmake {filename} -o {filenameTrue} && ./{filenameTrue}"
+        case "asm":
+            cmd = f"nasm -f elf64 {filename} -o {filenameTrue}.o && ld {filenameTrue}.o -o {filenameTrue} && ./{filenameTrue}"
+        case "d":
+            cmd = f"dmd {filename} -ofa {filenameTrue} && ./{filenameTrue}"
+        case "jl":
+            cmd = f"julia {filename}"
+        case "vb":
+            cmd = f"vbnc {filename} && mono {filenameTrue}.exe"
+        case "sql":
+            cmd = f"echo 'SQL files need a database engine to run'"
+        case _:
+            cmd = f"echo 'Unknown file type; cannot run'"
+
     return cmd
 
 @eel.expose
