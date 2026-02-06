@@ -3,7 +3,7 @@
 This is a newer repo for NotesIDE.  
 Frequent updates happen here before being merged into the main repo.
 
-This is the source code and should work on most OS's and keep in mind, this is ONLY THE SOURCE CODE THAT SHOULD WORK ON MOST DEVICES. If you need a os specific version of the app, kindly go to [Noteside downlaod page](noteside.vercel.app).
+This is the source code and should work on most OS's and keep in mind, this is ONLY THE SOURCE CODE THAT SHOULD WORK ON MOST DEVICES. If you need a os specific version of the app, kindly go to [Noteside downlaod page](https://noteside.vercel.app/).
 
 # What i will cover in this in md file
 
