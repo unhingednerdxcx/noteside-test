@@ -20,7 +20,7 @@ This is the source code and should work on most OS's and keep in mind, this is O
 NotesIDE is an ide that has note taking capabilites made for new learners or people who want to use IDEs without bothering about expert programming stuff. It provides a clean UI/UX made using the eel frameworks which uses Python for the backend and web Frontend; a web app. The eel frameworks also allows the app to be lightweight. It uses `Google` for MacOS, `Firefox` for Linux, `Edge` for Windows and `Google` for the open-source version by default.
 
 # What are the files for
-
+```text
 The root of this folder
 └── NotesIDE/
     ├── data/                  --> Contains data like setting
@@ -43,6 +43,7 @@ The root of this folder
     ├── LICENSE                --> Contains the Apache license
     ├── notes.txt              --> Contains the logs
     └── README.md              --> Information point
+```
 
 # My purpose
 
